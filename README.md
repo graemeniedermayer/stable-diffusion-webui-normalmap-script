@@ -7,7 +7,7 @@ To generate realistic normal maps from a single image, this script uses code and
 
 ## Examples
 todo: update
-[![screenshot](examples.png)](https://raw.githubusercontent.com/thygate/stable-diffusion-webui-depthmap-script/main/examples.png)
+[![screenshot](examples.png)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples.png)
 
 ## Updates
 This was forked from v0.1.9 depth maps
