@@ -228,6 +228,25 @@ class Script(scripts.Script):
 				img_output2[:,:,1] = img_output / 256.0
 				img_output2[:,:,2] = img_output / 256.0
 
+				# source this answer
+				# take gradients
+				zy, zx = np.gradient(img_output)  
+
+				zx = cv2.Sobel(np.float64(img_output), cv2.CV_64F, 1, 0, ksize=5)     
+				zy = cv2.Sobel(np.float64(img_output), cv2.CV_64F, 0, 1, ksize=5) 
+
+				normal = np.dstack((-zx, -zy, np.ones_like(img_output)))
+				n = np.linalg.norm(normal, axis=2)
+				normal[:, :, 0] /= n
+				normal[:, :, 1] /= n
+				normal[:, :, 2] /= n
+
+				# offset and rescale values to be in 0-255
+				normal += 1
+				normal /= 2
+				normal *= 255	
+				normal = normal.astype(np.uint8)
+
 				# get generation parameters
 				if hasattr(p, 'all_prompts') and opts.enable_pnginfo:
 					info = create_infotext(p, p.all_prompts, p.all_seeds, p.all_subseeds, "", 0, 0)
@@ -236,19 +255,15 @@ class Script(scripts.Script):
 
 				if not combine_output:
 					if show_depth:
-						processed.images.append(Image.fromarray(img_output))
+						processed.images.append(Image.fromarray(normal))
 					if save_depth:
-						# only save 16 bit single channel image when PNG format is selected
-						if opts.samples_format == "png":
-							images.save_image(Image.fromarray(img_output), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_depth")
-						else:
-							images.save_image(Image.fromarray(img_output2), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_depth")
+						images.save_image(Image.fromarray(normal), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
 				else:
-					img_concat = np.concatenate((processed.images[count], img_output2), axis=combine_output_axis)
+					img_concat = np.concatenate((processed.images[count], normal), axis=combine_output_axis)
 					if show_depth:
 						processed.images.append(Image.fromarray(img_concat))
 					if save_depth:
-						images.save_image(Image.fromarray(img_concat), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_depth")
+						images.save_image(Image.fromarray(img_concat), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
 
 				#colormap = plt.get_cmap('inferno')
 				#heatmap = (colormap(img_output2[:,:,0] / 256.0) * 2**16).astype(np.uint16)[:,:,:3]
