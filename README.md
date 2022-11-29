@@ -20,14 +20,14 @@ This was forked from v0.1.9 depth maps
 > 💡 To update, only replace the `normalmap.py` script, and restart.
 
 ## Install instructions
-* Save `normalmap.py` into the `stable-diffusion-webui/scripts` folder.
-* Clone the [MiDaS](https://github.com/isl-org/MiDaS) repository into `stable-diffusion-webui/repositories/midas` by running this command from the stable-diffusion-webui directory :
-    * `git clone https://github.com/isl-org/MiDaS.git  repositories/midas`
-* Restart AUTOMATIC1111
->Model `weights` will be downloaded automatically on first use and saved to /models/midas.
+In the WebUI, in the Extensions tab, in the Install from URL subtab, enter this repository https://github.com/graemeniedermayer/stable-diffusion-webui-normalmap-script and click install.
+The midas repository will be cloned to /repositories/midas
+
+Model weights will be downloaded automatically on first use and saved to /models/midas.
+
 
 ## Usage
-Select the "DepthMap vX.X.X" script from the script selection box in either txt2img or img2img.
+Select the "NormalMap vX.X.X" script from the script selection box in either txt2img or img2img.
 ![screenshot](options.png)
 
 The model can `Compute on` GPU and CPU, use CPU if low on VRAM. 

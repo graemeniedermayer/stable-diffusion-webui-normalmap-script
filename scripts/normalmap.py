@@ -24,7 +24,7 @@ from repositories.midas.midas.transforms import Resize, NormalizeImage, PrepareF
 import numpy as np
 #import matplotlib.pyplot as plt
 
-scriptname = "normalMap v0.1.9"
+scriptname = "NormalMap v0.1.0"
 
 class Script(scripts.Script):
 	def title(self):
@@ -272,6 +272,8 @@ class Script(scripts.Script):
 		except RuntimeError as e:
 			if 'out of memory' in str(e):
 				print("ERROR: out of memory, could not generate normalmap !")
+			else:
+				print(e)
 
 		finally:
 			del model
