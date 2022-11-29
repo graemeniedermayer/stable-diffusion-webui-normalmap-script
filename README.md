@@ -7,6 +7,7 @@ To generate realistic normal maps from a single image, this script uses code and
 
 ## Examples
 Gif compression does add extra artifacts.
+
 [![gif](example.gif)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/example.gif?raw=true)
 [![screenshot](normal_examples.jpg)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/normal_examples.jpg?raw=true)
 
