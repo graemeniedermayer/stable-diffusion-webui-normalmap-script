@@ -1,4 +1,4 @@
-# Author: thygate
+# Author: thygate with modifications from graemeniedermayer
 # https://github.com/thygate/stable-diffusion-webui-depthmap-script
 
 import modules.scripts as scripts
@@ -24,7 +24,7 @@ from repositories.midas.midas.transforms import Resize, NormalizeImage, PrepareF
 import numpy as np
 #import matplotlib.pyplot as plt
 
-scriptname = "DepthMap v0.1.9"
+scriptname = "normalMap v0.1.9"
 
 class Script(scripts.Script):
 	def title(self):
@@ -39,16 +39,16 @@ class Script(scripts.Script):
 		model_type = gr.Dropdown(label="Model", choices=['dpt_large','dpt_hybrid','midas_v21','midas_v21_small'], value='dpt_large', type="index", elem_id="model_type")
 		net_width = gr.Slider(minimum=64, maximum=2048, step=64, label='Net width', value=384)
 		net_height = gr.Slider(minimum=64, maximum=2048, step=64, label='Net height', value=384)
-		match_size = gr.Checkbox(label="Match input size",value=False)
-		invert_depth = gr.Checkbox(label="Invert DepthMap (black=near, white=far)",value=False)
-		save_depth = gr.Checkbox(label="Save DepthMap",value=True)
-		show_depth = gr.Checkbox(label="Show DepthMap",value=True)
-		combine_output = gr.Checkbox(label="Combine into one image.",value=True)
+		match_size = gr.Checkbox(label="Match input size",value=True)
+		invert_normal = gr.Checkbox(label="Invert normalMap (black=near, white=far)",value=False)
+		save_normal = gr.Checkbox(label="Save normalMap",value=True)
+		show_normal = gr.Checkbox(label="Show normalMap",value=True)
+		combine_output = gr.Checkbox(label="Combine into one image.",value=False)
 		combine_output_axis = gr.Radio(label="Combine axis", choices=['Vertical','Horizontal'], value='Horizontal', type="index")
 
-		return [compute_device, model_type, net_width, net_height, match_size, invert_depth, save_depth, show_depth, combine_output, combine_output_axis]
+		return [compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis]
 
-	def run(self, p, compute_device, model_type, net_width, net_height, match_size, invert_depth, save_depth, show_depth, combine_output, combine_output_axis):
+	def run(self, p, compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis):
 
 		def download_file(filename, url):
 			print("Downloading midas model weights to %s" % filename)
@@ -170,7 +170,7 @@ class Script(scripts.Script):
 
 			model.to(device)
 
-			print("Computing depthmap(s) ..")
+			print("Computing normalmap(s) ..")
 			# iterate over input (generated) images
 			for count in range(0,len(processed.images)):
 				# skip first (grid) image if count > 1
@@ -203,23 +203,23 @@ class Script(scripts.Script):
 					)
 
 				# output
-				depth = prediction
+				normal = prediction
 				numbytes=2
-				depth_min = depth.min()
-				depth_max = depth.max()
+				normal_min = normal.min()
+				normal_max = normal.max()
 				max_val = (2**(8*numbytes))-1
 
 				# check output before normalizing and mapping to 16 bit
-				if depth_max - depth_min > np.finfo("float").eps:
-					out = max_val * (depth - depth_min) / (depth_max - depth_min)
+				if normal_max - normal_min > np.finfo("float").eps:
+					out = max_val * (normal - normal_min) / (normal_max - normal_min)
 				else:
-					out = np.zeros(depth.shape)
+					out = np.zeros(normal.shape)
 				
 				# single channel, 16 bit image
 				img_output = out.astype("uint16")
 
-				# invert depth map
-				if invert_depth:
+				# invert normal map
+				if invert_normal:
 					img_output = cv2.bitwise_not(img_output)
 
 				# three channel, 8 bits per channel image
@@ -254,15 +254,15 @@ class Script(scripts.Script):
 					info = None
 
 				if not combine_output:
-					if show_depth:
+					if show_normal:
 						processed.images.append(Image.fromarray(normal))
-					if save_depth:
+					if save_normal:
 						images.save_image(Image.fromarray(normal), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
 				else:
 					img_concat = np.concatenate((processed.images[count], normal), axis=combine_output_axis)
-					if show_depth:
+					if show_normal:
 						processed.images.append(Image.fromarray(img_concat))
-					if save_depth:
+					if save_normal:
 						images.save_image(Image.fromarray(img_concat), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
 
 				#colormap = plt.get_cmap('inferno')
@@ -271,7 +271,7 @@ class Script(scripts.Script):
 
 		except RuntimeError as e:
 			if 'out of memory' in str(e):
-				print("ERROR: out of memory, could not generate depthmap !")
+				print("ERROR: out of memory, could not generate normalmap !")
 
 		finally:
 			del model
