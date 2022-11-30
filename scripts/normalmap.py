@@ -46,7 +46,7 @@ class Script(scripts.Script):
 		pre_smooth = gr.Checkbox(label="pre-smooth gradient",value=True)
 		smooth_kernel = gr.Slider(minimum=1, maximum=31, step=1, label='smooth kernel size', value=3)
 
-		invert_normal = gr.Checkbox(label="Invert normalMap (black=near, white=far)",value=True)
+		invert_normal = gr.Checkbox(label="invert normal map (pre-flip depth map)",value=False)
 		save_normal = gr.Checkbox(label="Save normalMap",value=True)
 		show_normal = gr.Checkbox(label="Show normalMap",value=True)
 		combine_output = gr.Checkbox(label="Combine into one image.",value=False)
@@ -225,7 +225,7 @@ class Script(scripts.Script):
 				img_output = out.astype("uint16")
 
 				# invert normal map
-				if invert_normal:
+				if not invert_normal:
 					img_output = cv2.bitwise_not(img_output)
 
 				# three channel, 8 bits per channel image
