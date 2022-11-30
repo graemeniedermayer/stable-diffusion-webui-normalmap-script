@@ -24,7 +24,7 @@ from repositories.midas.midas.transforms import Resize, NormalizeImage, PrepareF
 import numpy as np
 #import matplotlib.pyplot as plt
 
-scriptname = "NormalMap v0.1.0"
+scriptname = "NormalMap v0.1.1"
 
 class Script(scripts.Script):
 	def title(self):
@@ -40,15 +40,21 @@ class Script(scripts.Script):
 		net_width = gr.Slider(minimum=64, maximum=2048, step=64, label='Net width', value=384)
 		net_height = gr.Slider(minimum=64, maximum=2048, step=64, label='Net height', value=384)
 		match_size = gr.Checkbox(label="Match input size",value=True)
-		invert_normal = gr.Checkbox(label="Invert normalMap (black=near, white=far)",value=False)
+
+		sobel_gradient = gr.Checkbox(label="sobel gradient",value=True)
+		sobel_kernel = gr.Slider(minimum=1, maximum=31, step=2, label='sobel kernel size', value=3)
+		pre_smooth = gr.Checkbox(label="pre-smooth gradient",value=True)
+		smooth_kernel = gr.Slider(minimum=1, maximum=31, step=1, label='smooth kernel size', value=3)
+
+		invert_normal = gr.Checkbox(label="Invert normalMap (black=near, white=far)",value=True)
 		save_normal = gr.Checkbox(label="Save normalMap",value=True)
 		show_normal = gr.Checkbox(label="Show normalMap",value=True)
 		combine_output = gr.Checkbox(label="Combine into one image.",value=False)
 		combine_output_axis = gr.Radio(label="Combine axis", choices=['Vertical','Horizontal'], value='Horizontal', type="index")
 
-		return [compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis]
+		return [compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis, sobel_gradient, sobel_kernel, pre_smooth, smooth_kernel]
 
-	def run(self, p, compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis):
+	def run(self, p, compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis, sobel_gradient, sobel_kernel, pre_smooth, smooth_kernel):
 
 		def download_file(filename, url):
 			print("Downloading midas model weights to %s" % filename)
@@ -229,13 +235,17 @@ class Script(scripts.Script):
 				img_output2[:,:,2] = img_output / 256.0
 
 				# source this answer
+				if pre_smooth:
+					s_kernel = np.ones((smooth_kernel, smooth_kernel), np.float32)/smooth_kernel**2
+					img_output = cv2.filter2D(src=img_output, ddepth=-1, kernel=s_kernel)
+
 				# take gradients
-				zy, zx = np.gradient(img_output)  
-
-				zx = cv2.Sobel(np.float64(img_output), cv2.CV_64F, 1, 0, ksize=5)     
-				zy = cv2.Sobel(np.float64(img_output), cv2.CV_64F, 0, 1, ksize=5) 
-
-				normal = np.dstack((-zx, -zy, np.ones_like(img_output)))
+				if sobel_gradient:
+					zx = cv2.Sobel(np.float64(img_output), cv2.CV_64F, 1, 0, ksize=sobel_kernel)     
+					zy = cv2.Sobel(np.float64(img_output), cv2.CV_64F, 0, 1, ksize=sobel_kernel) 
+				else:
+					zy, zx = np.gradient(img_output)  
+				normal = np.dstack((zx, -zy, np.ones_like(img_output)))
 				n = np.linalg.norm(normal, axis=2)
 				normal[:, :, 0] /= n
 				normal[:, :, 1] /= n
@@ -285,3 +295,4 @@ class Script(scripts.Script):
 			shared.sd_model.first_stage_model.to(devices.device)
 
 		return processed
+
