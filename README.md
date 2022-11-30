@@ -11,6 +11,16 @@ Things to add/fix:
 
 ## Examples
 
+Lighting
+[![lighting](rockssmall.mp4)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/rockssmall.mp4?raw=true)
+
+Moving Camera
+[![moving camera](movingcamerasmall.mp4)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/movingcamerasmall.mp4?raw=true)
+
+example of blurring (with and without)
+[![moving camera](withoutgaussianblursmall.mp4)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/withoutgaussianblursmall.mp4?raw=true)
+[![moving camera](gaussianblursmall.mp4)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/gaussianblursmall.mp4?raw=true)
+
 [![screenshot](examples.jpg)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples.jpg?raw=true)
 
 ## Updates
