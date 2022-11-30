@@ -12,7 +12,8 @@ Things to add/fix:
 ## Examples
 
 Lighting
-[![lighting](https://user-images.githubusercontent.com/38518120/204892655-d9f9cd6f-8310-4d5b-a80a-c039ae2715f0.mp4)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples/rockssmall.mp4?raw=true)
+https://user-images.githubusercontent.com/38518120/204892655-d9f9cd6f-8310-4d5b-a80a-c039ae2715f0.mp4
+[![lighting]()](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples/rockssmall.mp4?raw=true)
 
 
 Moving Camera
