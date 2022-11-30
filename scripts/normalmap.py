@@ -274,13 +274,13 @@ class Script(scripts.Script):
 					if show_normal:
 						processed.images.append(Image.fromarray(normal))
 					if save_normal:
-						images.save_image(Image.fromarray(normal), p.outpath_samples, "", processed.all_seeds[count], p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
+						images.save_image(Image.fromarray(normal), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
 				else:
 					img_concat = np.concatenate((processed.images[count], normal), axis=combine_output_axis)
 					if show_normal:
 						processed.images.append(Image.fromarray(img_concat))
 					if save_normal:
-						images.save_image(Image.fromarray(img_concat), p.outpath_samples, "", processed.all_seeds[count], p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
+						images.save_image(Image.fromarray(img_concat), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
 
 				#colormap = plt.get_cmap('inferno')
 				#heatmap = (colormap(img_output2[:,:,0] / 256.0) * 2**16).astype(np.uint16)[:,:,:3]
