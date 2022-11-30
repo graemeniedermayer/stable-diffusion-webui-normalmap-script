@@ -12,14 +12,16 @@ Things to add/fix:
 ## Examples
 
 Lighting
+
 [![lighting](examples/rocks.gif)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples/rocks.gif?raw=true)
 
 Moving Camera
+
 [![moving camera](examples/movcam.gif)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples/movcam.gif?raw=true)
 
 example of blurring (with and without)
-[![without gaus blur](examples/nogaus.gif)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples/nogaus.gif?raw=true)
-[![with gaus blur](examples/gaus.gif)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples/gaus.gif?raw=true)
+
+[![without gaus blur](examples/nogaus.gif)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples/nogaus.gif?raw=true)[![with gaus blur](examples/gaus.gif)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples/gaus.gif?raw=true)
 
 [![screenshot](examples.jpg)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples.jpg?raw=true)
 
