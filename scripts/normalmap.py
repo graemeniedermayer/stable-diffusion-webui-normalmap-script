@@ -41,10 +41,14 @@ class Script(scripts.Script):
 		net_height = gr.Slider(minimum=64, maximum=2048, step=64, label='Net height', value=384)
 		match_size = gr.Checkbox(label="Match input size",value=True)
 
+		pre_gaussian_blur = gr.Checkbox(label="smooth before calculating normals",value=False)
+		pre_gaussian_blur_kernel = gr.Slider(minimum=1, maximum=31, step=2, label='pre-smooth kernel size', value=3)
+
 		sobel_gradient = gr.Checkbox(label="sobel gradient",value=True)
 		sobel_kernel = gr.Slider(minimum=1, maximum=31, step=2, label='sobel kernel size', value=3)
-		pre_smooth = gr.Checkbox(label="pre-smooth gradient",value=True)
-		smooth_kernel = gr.Slider(minimum=1, maximum=31, step=1, label='smooth kernel size', value=3)
+
+		post_gaussian_blur = gr.Checkbox(label="smooth after calculating normals",value=False)
+		post_gaussian_blur_kernel = gr.Slider(minimum=1, maximum=31, step=2, label='post-smooth kernel size', value=3)
 
 		invert_normal = gr.Checkbox(label="invert normal map (pre-flip depth map)",value=False)
 		save_normal = gr.Checkbox(label="Save normalMap",value=True)
@@ -52,9 +56,9 @@ class Script(scripts.Script):
 		combine_output = gr.Checkbox(label="Combine into one image.",value=False)
 		combine_output_axis = gr.Radio(label="Combine axis", choices=['Vertical','Horizontal'], value='Horizontal', type="index")
 
-		return [compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis, sobel_gradient, sobel_kernel, pre_smooth, smooth_kernel]
+		return [compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis, sobel_gradient, sobel_kernel, pre_gaussian_blur, pre_gaussian_blur_kernel, post_gaussian_blur, post_gaussian_blur_kernel]
 
-	def run(self, p, compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis, sobel_gradient, sobel_kernel, pre_smooth, smooth_kernel):
+	def run(self, p, compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis, sobel_gradient, sobel_kernel, pre_gaussian_blur, pre_gaussian_blur_kernel, post_gaussian_blur, post_gaussian_blur_kernel):
 
 		def download_file(filename, url):
 			print("Downloading midas model weights to %s" % filename)
@@ -235,9 +239,8 @@ class Script(scripts.Script):
 				img_output2[:,:,2] = img_output / 256.0
 
 				# source this answer
-				if pre_smooth:
-					s_kernel = np.ones((smooth_kernel, smooth_kernel), np.float32)/smooth_kernel**2
-					img_output = cv2.filter2D(src=img_output, ddepth=-1, kernel=s_kernel)
+				if pre_gaussian_blur:
+					img_output = cv2.GaussianBlur(img_output, (pre_gaussian_blur_kernel, pre_gaussian_blur_kernel), pre_gaussian_blur_kernel)
 
 				# take gradients
 				if sobel_gradient:
@@ -250,6 +253,10 @@ class Script(scripts.Script):
 				normal[:, :, 0] /= n
 				normal[:, :, 1] /= n
 				normal[:, :, 2] /= n
+
+				# post blur
+				if post_gaussian_blur:
+					normal = cv2.GaussianBlur(normal, (post_gaussian_blur_kernel, post_gaussian_blur_kernel), post_gaussian_blur_kernel)
 
 				# offset and rescale values to be in 0-255
 				normal += 1
@@ -267,13 +274,13 @@ class Script(scripts.Script):
 					if show_normal:
 						processed.images.append(Image.fromarray(normal))
 					if save_normal:
-						images.save_image(Image.fromarray(normal), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
+						images.save_image(Image.fromarray(normal), p.outpath_samples, "", processed.all_seeds[count], p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
 				else:
 					img_concat = np.concatenate((processed.images[count], normal), axis=combine_output_axis)
 					if show_normal:
 						processed.images.append(Image.fromarray(img_concat))
 					if save_normal:
-						images.save_image(Image.fromarray(img_concat), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
+						images.save_image(Image.fromarray(img_concat), p.outpath_samples, "", processed.all_seeds[count], p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
 
 				#colormap = plt.get_cmap('inferno')
 				#heatmap = (colormap(img_output2[:,:,0] / 256.0) * 2**16).astype(np.uint16)[:,:,:3]
