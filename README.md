@@ -3,8 +3,11 @@ This script is an addon for [AUTOMATIC1111's Stable Diffusion Web UI](https://gi
 
 To generate realistic normal maps from a single image, this script uses code and models from the [MiDaS](https://github.com/isl-org/MiDaS) repository by Intel ISL. See [https://pytorch.org/hub/intelisl_midas_v2/](https://pytorch.org/hub/intelisl_midas_v2/) for more info.
 
-## Heavy work in-progress
+## Work in-progress
+Should be functional.
+
 Things to add/fix:
+* Tiling can be improved (gradients could be matched).
 * Implement bilateral filtering
 * Naming convention doesn't include n_iter
 * I have not tested everything yet.
