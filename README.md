@@ -52,6 +52,8 @@ There are four models available from the `Model` dropdown : dpt_large, dpt_hybri
 
 Net size can be set with `net width` and `net height`, or will be the same as the input image when `Match input size` is enabled. There is a trade-off between structural consistency and high-frequency details with respect to net size (see [observations](https://github.com/compphoto/BoostingMonocularDepth#observations)). Large maps will also need lots of VRAM.
 
+`smooth before`, `sobel gradient`, and `smooth after` are helpful for smoothing normal map. The smoothing functions are gaussian blurs. Increasing the kernel numbers will smooth more but also remove details and blend edges. Currently looking into better smoothing methods. The kernels must be odd integers.
+
 When enabled, `Invert NormalMap` will result in a normalmap that's calculated from a flipped depthmap.
 
 Regardless of global settings, `Save NormalMap` will always save the normalmap in the default txt2img or img2img directory with the filename suffix '_depth'. Generation parameters are saved with the image if enabled in settings.
@@ -70,6 +72,8 @@ When `Combine into one image` is enabled, the normalmap will be combined with th
 ## Acknowledgements
 
 This is a modification of an awesome [depthmap repo](https://github.com/thygate/stable-diffusion-webui-depthmap-script) by thygate.
+
+Initial depth to normal is based on this [stackoverflow](https://stackoverflow.com/questions/53350391/surface-normal-calculation-from-depth-map-in-python) answer.
 
 This project uses code and information from following papers, from the repository [github.com/isl-org/MiDaS](https://github.com/isl-org/MiDaS) :
 ```

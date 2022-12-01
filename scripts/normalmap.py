@@ -238,23 +238,25 @@ class Script(scripts.Script):
 				img_output2[:,:,1] = img_output / 256.0
 				img_output2[:,:,2] = img_output / 256.0
 
-				# source this answer
+				#pre blur (only blurs z-axis)
 				if pre_gaussian_blur:
 					img_output = cv2.GaussianBlur(img_output, (pre_gaussian_blur_kernel, pre_gaussian_blur_kernel), pre_gaussian_blur_kernel)
 
-				# take gradients
+				# take gradients 
 				if sobel_gradient:
 					zx = cv2.Sobel(np.float64(img_output), cv2.CV_64F, 1, 0, ksize=sobel_kernel)     
 					zy = cv2.Sobel(np.float64(img_output), cv2.CV_64F, 0, 1, ksize=sobel_kernel) 
 				else:
-					zy, zx = np.gradient(img_output)  
+					zy, zx = np.gradient(img_output)
+
+				# combine and normalize gradients.
 				normal = np.dstack((zx, -zy, np.ones_like(img_output)))
 				n = np.linalg.norm(normal, axis=2)
 				normal[:, :, 0] /= n
 				normal[:, :, 1] /= n
 				normal[:, :, 2] /= n
 
-				# post blur
+				# post blur (will break normal maps unitary values)
 				if post_gaussian_blur:
 					normal = cv2.GaussianBlur(normal, (post_gaussian_blur_kernel, post_gaussian_blur_kernel), post_gaussian_blur_kernel)
 
