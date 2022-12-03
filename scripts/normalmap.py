@@ -8,14 +8,28 @@ from modules import processing, images, shared, sd_samplers, devices
 from modules.processing import create_infotext, process_images, Processed
 from modules.shared import opts, cmd_opts, state, Options
 from PIL import Image
+from pathlib import Path
 
+import sys
 import torch, gc
+import torch.nn as nn
 import cv2
 import requests
 import os.path
 import contextlib
+import matplotlib.pyplot as plt
+import numpy as np
 
-from torchvision.transforms import Compose
+path_monorepo = Path.joinpath(Path().resolve(), "repositories\BoostingMonocularDepth")
+sys.path.append(str(path_monorepo))
+
+# AdelaiDepth imports
+from lib.multi_depth_model_woauxi import RelDepthModel
+from lib.net_tools import strip_prefix_if_present
+
+from torchvision.transforms import Compose, transforms
+
+#midas imports
 from repositories.midas.midas.dpt_depth import DPTDepthModel
 from repositories.midas.midas.midas_net import MidasNet
 from repositories.midas.midas.midas_net_custom import MidasNet_small
@@ -24,7 +38,7 @@ from repositories.midas.midas.transforms import Resize, NormalizeImage, PrepareF
 import numpy as np
 #import matplotlib.pyplot as plt
 
-scriptname = "NormalMap v0.1.1"
+scriptname = "NormalMap v0.1.2"
 
 class Script(scripts.Script):
 	def title(self):
@@ -35,39 +49,68 @@ class Script(scripts.Script):
 
 	def ui(self, is_img2img):
 
-		compute_device = gr.Radio(label="Compute on", choices=['GPU','CPU'], value='GPU', type="index")
-		model_type = gr.Dropdown(label="Model", choices=['dpt_large','dpt_hybrid','midas_v21','midas_v21_small'], value='dpt_large', type="index", elem_id="model_type")
-		net_width = gr.Slider(minimum=64, maximum=2048, step=64, label='Net width', value=384)
-		net_height = gr.Slider(minimum=64, maximum=2048, step=64, label='Net height', value=384)
-		match_size = gr.Checkbox(label="Match input size",value=True)
+		with gr.Row():
+			compute_device = gr.Radio(label="Compute on", choices=['GPU','CPU'], value='GPU', type="index")
+			model_type = gr.Dropdown(label="Model", choices=['dpt_large','dpt_hybrid','midas_v21','midas_v21_small','res101'], value='dpt_large', type="index", elem_id="model_type")
+		with gr.Row():
+			net_width = gr.Slider(minimum=64, maximum=2048, step=64, label='Net width', value=384)
+			net_height = gr.Slider(minimum=64, maximum=2048, step=64, label='Net height', value=384)
+		with gr.Row():	
+			match_size = gr.Checkbox(label="Match input size",value=True)
+			scale_depth = gr.Slider(minimum=0.1, maximum=3, step=0.1, label='pre-scale depth', value=1)
 
-		pre_gaussian_blur = gr.Checkbox(label="smooth before calculating normals",value=False)
-		pre_gaussian_blur_kernel = gr.Slider(minimum=1, maximum=31, step=2, label='pre-smooth kernel size', value=3)
+		with gr.Row():
+			pre_gaussian_blur = gr.Checkbox(label="smooth before calculating normals",value=False)
+			pre_gaussian_blur_kernel = gr.Slider(minimum=1, maximum=31, step=2, label='pre-smooth kernel size', value=3)
 
-		sobel_gradient = gr.Checkbox(label="sobel gradient",value=True)
-		sobel_kernel = gr.Slider(minimum=1, maximum=31, step=2, label='sobel kernel size', value=3)
+		with gr.Row():
+			sobel_gradient = gr.Checkbox(label="sobel gradient",value=True)
+			sobel_kernel = gr.Slider(minimum=1, maximum=31, step=2, label='sobel kernel size', value=3)
 
-		post_gaussian_blur = gr.Checkbox(label="smooth after calculating normals",value=False)
-		post_gaussian_blur_kernel = gr.Slider(minimum=1, maximum=31, step=2, label='post-smooth kernel size', value=3)
+		with gr.Row():
+			post_gaussian_blur = gr.Checkbox(label="smooth after calculating normals",value=False)
+			post_gaussian_blur_kernel = gr.Slider(minimum=1, maximum=31, step=2, label='post-smooth kernel size', value=3)
 
-		invert_normal = gr.Checkbox(label="invert normal map (pre-flip depth map)",value=False)
-		save_normal = gr.Checkbox(label="Save normalMap",value=True)
-		show_normal = gr.Checkbox(label="Show normalMap",value=True)
-		combine_output = gr.Checkbox(label="Combine into one image.",value=False)
-		combine_output_axis = gr.Radio(label="Combine axis", choices=['Vertical','Horizontal'], value='Horizontal', type="index")
+		with gr.Row():
+			combine_output = gr.Checkbox(label="Combine into one image.",value=False)
+			combine_output_axis = gr.Radio(label="Combine axis", choices=['Vertical','Horizontal'], value='Horizontal', type="index")
 
-		return [compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis, sobel_gradient, sobel_kernel, pre_gaussian_blur, pre_gaussian_blur_kernel, post_gaussian_blur, post_gaussian_blur_kernel]
+		with gr.Row():
+			invert_normal = gr.Checkbox(label="invert normal map (pre-flip depth map)",value=False)
+			save_normal = gr.Checkbox(label="Save normalMap",value=True)
+			show_normal = gr.Checkbox(label="Show normalMap",value=True)
+		
+		#would passing a dictionary be more readable?
+		return [compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis, sobel_gradient, sobel_kernel, pre_gaussian_blur, pre_gaussian_blur_kernel, post_gaussian_blur, post_gaussian_blur_kernel, scale_depth]
 
-	def run(self, p, compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis, sobel_gradient, sobel_kernel, pre_gaussian_blur, pre_gaussian_blur_kernel, post_gaussian_blur, post_gaussian_blur_kernel):
+	def run(self, p, compute_device, model_type, net_width, net_height, match_size, invert_normal, save_normal, show_normal, combine_output, combine_output_axis, sobel_gradient, sobel_kernel, pre_gaussian_blur, pre_gaussian_blur_kernel, post_gaussian_blur, post_gaussian_blur_kernel, scale_depth):
 
 		def download_file(filename, url):
-			print("Downloading midas model weights to %s" % filename)
+			print("Downloading depth model weights to %s" % filename)
 			with open(filename, 'wb') as fout:
 				response = requests.get(url, stream=True)
 				response.raise_for_status()
 				# Write response data to file
 				for block in response.iter_content(4096):
 					fout.write(block)
+
+		def scale_torch(img):
+			"""
+			Scale the image and output it in torch.tensor.
+			:param img: input rgb is in shape [H, W, C], input depth/disp is in shape [H, W]
+			:param scale: the scale factor. float
+			:return: img. [C, H, W]
+			"""
+			if len(img.shape) == 2:
+				img = img[np.newaxis, :, :]
+			if img.shape[2] == 3:
+				transform = transforms.Compose([transforms.ToTensor(),
+												transforms.Normalize((0.485, 0.456, 0.406) , (0.229, 0.224, 0.225) )])
+				img = transform(img.astype(np.float32))
+			else:
+				img = img.astype(np.float32)
+				img = torch.from_numpy(img)
+			return img
 
 		# sd process 
 		processed = processing.process_images(p)
@@ -79,7 +122,7 @@ class Script(scripts.Script):
 		print('\n%s' % scriptname)
 		
 		# init torch device
-		if compute_device == 0:
+		if compute_device == 0 or model_type == 4:
 			device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 		else:
 			device = torch.device("cpu")
@@ -87,10 +130,12 @@ class Script(scripts.Script):
 
 		# model path and name
 		model_dir = "./models/midas"
+		if model_type == 4:
+			model_dir = "./models/leres"
 		# create path to model if not present
 		os.makedirs(model_dir, exist_ok=True)
 
-		print("Loading midas model weights from ", end=" ")
+		print("Loading depth model weights from ", end=" ")
 
 		try:
 			#"dpt_large"
@@ -148,34 +193,45 @@ class Script(scripts.Script):
 				normalization = NormalizeImage(
 					mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
 				)
+			#"res101"
+			elif model_type == 4: 
+				model_path = f"{model_dir}/res101.pth"
+				print(model_path)
+				if not os.path.exists(model_path):
+					download_file(model_path,"https://cloudstor.aarnet.edu.au/plus/s/lTIJF4vrvHCAI31/download")
+				checkpoint = torch.load(model_path)
+				model = RelDepthModel(backbone='resnext101')
+				model.load_state_dict(strip_prefix_if_present(checkpoint['depth_model'], "module."), strict=True)
+				del checkpoint
 
 			# override net size
 			if (match_size):
 				net_width, net_height = processed.width, processed.height
 
 			# init transform
-			transform = Compose(
-				[
-					Resize(
-						net_width,
-						net_height,
-						resize_target=None,
-						keep_aspect_ratio=True,
-						ensure_multiple_of=32,
-						resize_method=resize_mode,
-						image_interpolation_method=cv2.INTER_CUBIC,
-					),
-					normalization,
-					PrepareForNet(),
-				]
-			)
+			if model_type != 4:
+				transform = Compose(
+					[
+						Resize(
+							net_width,
+							net_height,
+							resize_target=None,
+							keep_aspect_ratio=True,
+							ensure_multiple_of=32,
+							resize_method=resize_mode,
+							image_interpolation_method=cv2.INTER_CUBIC,
+						),
+						normalization,
+						PrepareForNet(),
+					]
+				)
 
 			model.eval()
 			
 			# optimize
 			if device == torch.device("cuda"):
 				model = model.to(memory_format=torch.channels_last)  
-				if not cmd_opts.no_half:
+				if not cmd_opts.no_half and model_type != 4:
 					model = model.half()
 
 			model.to(device)
@@ -189,28 +245,44 @@ class Script(scripts.Script):
 
 				# input image
 				img = cv2.cvtColor(np.asarray(processed.images[count]), cv2.COLOR_BGR2RGB) / 255.0
-				img_input = transform({"image": img})["image"]
+				
+				if model_type == 4:
 
-				# compute
-				precision_scope = torch.autocast if shared.cmd_opts.precision == "autocast" and device == torch.device("cuda") else contextlib.nullcontext
-				with torch.no_grad(), precision_scope("cuda"):
-					sample = torch.from_numpy(img_input).to(device).unsqueeze(0)
-					if device == torch.device("cuda"):
-						sample = sample.to(memory_format=torch.channels_last) 
-						if not cmd_opts.no_half:
-							sample = sample.half()
-					prediction = model.forward(sample)
-					prediction = (
-						torch.nn.functional.interpolate(
-							prediction.unsqueeze(1),
-							size=img.shape[:2],
-							mode="bicubic",
-							align_corners=False,
+					# leres transform input
+					rgb_c = img[:, :, ::-1].copy()
+					A_resize = cv2.resize(rgb_c, (net_width, net_height))
+					img_torch = scale_torch(A_resize)[None, :, :, :] 
+					# Forward pass
+					with torch.no_grad():
+						prediction = model.inference(img_torch)
+					prediction = prediction.squeeze().cpu().numpy()
+					prediction = cv2.resize(prediction, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
+
+				else:
+
+					# midas transform input
+					img_input = transform({"image": img})["image"]
+
+					# compute
+					precision_scope = torch.autocast if shared.cmd_opts.precision == "autocast" and device == torch.device("cuda") else contextlib.nullcontext
+					with torch.no_grad(), precision_scope("cuda"):
+						sample = torch.from_numpy(img_input).to(device).unsqueeze(0)
+						if device == torch.device("cuda"):
+							sample = sample.to(memory_format=torch.channels_last) 
+							if not cmd_opts.no_half:
+								sample = sample.half()
+						prediction = model.forward(sample)
+						prediction = (
+							torch.nn.functional.interpolate(
+								prediction.unsqueeze(1),
+								size=img.shape[:2],
+								mode="bicubic",
+								align_corners=False,
+							)
+							.squeeze()
+							.cpu()
+							.numpy()
 						)
-						.squeeze()
-						.cpu()
-						.numpy()
-					)
 
 				# output
 				normal = prediction
@@ -229,8 +301,10 @@ class Script(scripts.Script):
 				img_output = out.astype("uint16")
 
 				# invert normal map
-				if not invert_normal:
+				if invert_normal ^ model_type == 4:
 					img_output = cv2.bitwise_not(img_output)
+
+				img_input *= depth_scale
 
 				# three channel, 8 bits per channel image
 				img_output2 = np.zeros_like(processed.images[count])
@@ -268,7 +342,7 @@ class Script(scripts.Script):
 
 				# get generation parameters
 				if hasattr(p, 'all_prompts') and opts.enable_pnginfo:
-					info = create_infotext(p, p.all_prompts, p.all_seeds, p.all_subseeds, "", 0, 0)
+					info = create_infotext(p, p.all_prompts, p.all_seeds, p.all_subseeds, "", 0, count-1)
 				else:
 					info = None
 
@@ -276,17 +350,14 @@ class Script(scripts.Script):
 					if show_normal:
 						processed.images.append(Image.fromarray(normal))
 					if save_normal:
-						images.save_image(Image.fromarray(normal), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
+						images.save_image(Image.fromarray(normal), p.outpath_samples, "", processed.all_prompts[count-1], p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
 				else:
 					img_concat = np.concatenate((processed.images[count], normal), axis=combine_output_axis)
 					if show_normal:
 						processed.images.append(Image.fromarray(img_concat))
 					if save_normal:
-						images.save_image(Image.fromarray(img_concat), p.outpath_samples, "", processed.seed, p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
+						images.save_image(Image.fromarray(img_concat), p.outpath_samples, "", processed.all_prompts[count-1], p.prompt, opts.samples_format, info=info, p=p, suffix="_normal")
 
-				#colormap = plt.get_cmap('inferno')
-				#heatmap = (colormap(img_output2[:,:,0] / 256.0) * 2**16).astype(np.uint16)[:,:,:3]
-				#processed.images.append(heatmap)
 
 		except RuntimeError as e:
 			if 'out of memory' in str(e):
