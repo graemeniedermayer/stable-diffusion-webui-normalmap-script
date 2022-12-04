@@ -31,7 +31,7 @@ example of blurring (with and without)
 ## Updates
 * v0.1.2 bugfixes
     * brings everything up to depth map v0.2.3 (leReS included)
-    * big depthmap update was (experimental) support for AdelaiDepth/LeReS (GPU Only!)
+    * big depthmap update, experimental support for AdelaiDepth/LeReS (GPU Only!)
     * pre-scale depth slider
 
 This was forked from v0.1.9 depth maps
