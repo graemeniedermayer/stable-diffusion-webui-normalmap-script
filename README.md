@@ -58,7 +58,7 @@ Normal maps are calculated in two steps calculating a depth map and then estimat
 
 For calculated the depthmap there are five models available from the `Model` dropdown, the first four : dpt_large, dpt_hybrid, midas_v21_small, and midas_v21. See the [MiDaS](https://github.com/isl-org/MiDaS) repository for more info.
 
-For the fifth model, res101, see [AdelaiDepth/LeReS](https://github.com/aim-uofa/AdelaiDepth/tree/main/LeReS) for more info. It can only compute on GPU at this time.
+For the fifth model, res101, see [AdelaiDepth/LeReS](https://github.com/aim-uofa/AdelaiDepth/tree/main/LeReS) for more info. It can only compute on GPU at this time. The res101 model appears to sometimes create inverted normal maps so pay attention to whether greens are nearer to the top of rounded objects.
 
 Net size can be set with `net width` and `net height`, or will be the same as the input image when `Match input size` is enabled. There is a trade-off between structural consistency and high-frequency details with respect to net size (see [observations](https://github.com/compphoto/BoostingMonocularDepth#observations)). Large maps will also need lots of VRAM.
 
@@ -68,7 +68,7 @@ Net size can be set with `net width` and `net height`, or will be the same as th
 
 `smooth before`, `sobel gradient`, and `smooth after` are helpful for smoothing normal map. The smoothing functions are gaussian blurs. Increasing the kernel numbers will smooth more but also remove details and blend edges. Currently looking into better smoothing methods. The kernels must be odd integers.
 
-When enabled, `Invert NormalMap` will result in a normalmap that's calculated from a flipped depthmap.
+When enabled, `Invert NormalMap` will result in a normalmap that's calculated from a flipped depthmap. This is particularly useful for res101. In normal map images, rounded objects will have a green top, blues to the left, and reds to the right. If greens are appear at the bottom of rounded surfaces, this button should be clicked.
 
 Regardless of global settings, `Save NormalMap` will always save the normalmap in the default txt2img or img2img directory with the filename suffix '_normal'. Generation parameters are saved with the image if enabled in settings.
 
