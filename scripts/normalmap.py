@@ -20,7 +20,7 @@ import contextlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-path_monorepo = Path.joinpath(Path().resolve(), "repositories\BoostingMonocularDepth")
+path_monorepo = Path.joinpath(Path().resolve(), "repositories/BoostingMonocularDepth")
 sys.path.append(str(path_monorepo))
 
 # AdelaiDepth imports
@@ -51,13 +51,13 @@ class Script(scripts.Script):
 
 		with gr.Row():
 			compute_device = gr.Radio(label="Compute on", choices=['GPU','CPU'], value='GPU', type="index")
-			model_type = gr.Dropdown(label="Model", choices=['dpt_large','dpt_hybrid','midas_v21','midas_v21_small','res101'], value='dpt_large', type="index", elem_id="model_type")
+			model_type = gr.Dropdown(label="Model", choices=['dpt_large','dpt_hybrid','midas_v21','midas_v21_small','res101 (GPU only)'], value='dpt_large', type="index", elem_id="model_type")
 		with gr.Row():
 			net_width = gr.Slider(minimum=64, maximum=2048, step=64, label='Net width', value=384)
 			net_height = gr.Slider(minimum=64, maximum=2048, step=64, label='Net height', value=384)
 		with gr.Row():	
 			match_size = gr.Checkbox(label="Match input size",value=True)
-			scale_depth = gr.Slider(minimum=0.1, maximum=3, step=0.1, label='pre-scale depth', value=1)
+			scale_depth = gr.Slider(minimum=0.1, maximum=3, step=0.1, label='pre-scale depth', value=1.0)
 
 		with gr.Row():
 			pre_gaussian_blur = gr.Checkbox(label="smooth before calculating normals",value=False)
@@ -304,7 +304,7 @@ class Script(scripts.Script):
 				if invert_normal ^ model_type == 4:
 					img_output = cv2.bitwise_not(img_output)
 
-				img_input *= depth_scale
+				img_output *= scale_depth
 
 				# three channel, 8 bits per channel image
 				img_output2 = np.zeros_like(processed.images[count])

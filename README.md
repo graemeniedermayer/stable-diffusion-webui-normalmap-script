@@ -8,8 +8,7 @@ Should be functional.
 
 Things to add/fix:
 * Tiling can be improved (gradients could be matched).
-* Implement bilateral filtering
-* Naming convention doesn't include n_iter
+* Implement bilateral filtering.
 * I have not tested everything yet.
 
 ## Examples
@@ -30,7 +29,7 @@ example of blurring (with and without)
 
 ## Updates
 * v0.1.2 bugfixes
-    * brings everything up to depth map v0.2.2 (leReS included)
+    * brings everything up to depth map v0.2.3 (leReS included)
     * big depthmap update was (experimental) support for AdelaiDepth/LeReS (GPU Only!)
     * pre-scale depth slider
 
