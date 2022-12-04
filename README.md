@@ -10,6 +10,7 @@ Things to add/fix:
 * Tiling can be improved (gradients could be matched).
 * Implement bilateral filtering.
 * I have not tested everything yet.
+* Clean up ui more.
 
 ## Examples
 
