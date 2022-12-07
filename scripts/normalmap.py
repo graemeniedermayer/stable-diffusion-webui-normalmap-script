@@ -421,7 +421,7 @@ class Script(scripts.Script):
 				img_output = out.astype("uint16")
 
 				# invert normal map
-				if not invert_normal:
+				if not (invert_normal ^ model_type == 4):
 					img_output = cv2.bitwise_not(img_output)
 
 				img_output *= scale_depth
