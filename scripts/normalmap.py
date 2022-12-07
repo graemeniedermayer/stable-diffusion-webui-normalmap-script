@@ -59,7 +59,7 @@ class Script(scripts.Script):
 
 		with gr.Row():
 			compute_device = gr.Radio(label="Compute on", choices=['GPU','CPU'], value='GPU', type="index")
-			model_type = gr.Dropdown(label="Model", choices=['dpt_large','dpt_hybrid','midas_v21','midas_v21_small','res101'], value='res101', type="index", elem_id="model_type")
+			model_type = gr.Dropdown(label="Model", choices=['dpt_large','dpt_hybrid','midas_v21','midas_v21_small','res101'], value='dpt_large', type="index", elem_id="model_type")
 		with gr.Row():
 			net_width = gr.Slider(minimum=64, maximum=2048, step=64, label='Net width', value=384)
 			net_height = gr.Slider(minimum=64, maximum=2048, step=64, label='Net height', value=384)
