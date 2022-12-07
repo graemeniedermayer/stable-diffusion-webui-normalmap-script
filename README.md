@@ -1,11 +1,9 @@
-﻿# Normal Maps for Stable Diffusion WebUI
+﻿# High Resolution Normal Maps for Stable Diffusion WebUI
 This script is an addon for [AUTOMATIC1111's Stable Diffusion Web UI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) that creates `normalmaps` from the generated images. Normal maps are helpful for giving flat textures a sense of depth with lighting.
 
-To generate realistic normal maps from a single image, this script uses code and models from the [MiDaS](https://github.com/isl-org/MiDaS) repository by Intel ISL. See [https://pytorch.org/hub/intelisl_midas_v2/](https://pytorch.org/hub/intelisl_midas_v2/) for more info, or LeReS from the [AdelaiDepth](https://github.com/aim-uofa/AdelaiDepth) repository by Advanced Intelligent Machines. 
+To generate realistic normal maps from a single image, this script uses code and models from the [MiDaS](https://github.com/isl-org/MiDaS) repository by Intel ISL. See [https://pytorch.org/hub/intelisl_midas_v2/](https://pytorch.org/hub/intelisl_midas_v2/) for more info, or LeReS from the [AdelaiDepth](https://github.com/aim-uofa/AdelaiDepth) repository by Advanced Intelligent Machines. Multi-resolution merging as implemented by [BoostingMonocularDepth](https://github.com/compphoto/BoostingMonocularDepth) is used to generate high resolution depth maps.
 
 ## Work in-progress
-Should be functional.
-
 Things to add/fix:
 * Tiling can be improved (gradients could be matched).
 * Implement bilateral filtering.
@@ -29,6 +27,11 @@ example of blurring (with and without)
 [![screenshot](examples.jpg)](https://raw.githubusercontent.com/graemeniedermayer/stable-diffusion-webui-normalmap-script/main/examples.jpg?raw=true)
 
 ## Updates
+
+* v0.1.3
+    * brings everything up to depth map v0.2.4
+    * high quality multi-resolution depth
+
 * v0.1.2 bugfixes
     * brings everything up to depth map v0.2.3 (leReS included)
     * big depthmap update, experimental support for AdelaiDepth/LeReS (GPU Only!)
@@ -44,7 +47,10 @@ The midas repository will be cloned to /repositories/midas
 
 The [BoostingMonocularDepth](https://github.com/compphoto/BoostingMonocularDepth) repository will be cloned to /repositories/BoostingMonocularDepth and added to sys.path
 
-Model `weights` will be downloaded automatically on first use and saved to /models/midas or /models/leres
+Model `weights` will be downloaded automatically on first use and saved to /models/midas or /models/leres.
+
+### Updating
+In the WebUI, in the `Extensions` tab, in the `Installed` subtab, click `Check for Updates` and then `Apply and restart UI`.
 
 ## Usage
 Select the "NormalMap vX.X.X" script from the script selection box in either txt2img or img2img.
@@ -61,6 +67,8 @@ For calculated the depthmap there are five models available from the `Model` dro
 For the fifth model, res101, see [AdelaiDepth/LeReS](https://github.com/aim-uofa/AdelaiDepth/tree/main/LeReS) for more info. It can only compute on GPU at this time. The res101 model appears to sometimes create inverted normal maps so pay attention to whether greens are nearer to the top of rounded objects.
 
 Net size can be set with `net width` and `net height`, or will be the same as the input image when `Match input size` is enabled. There is a trade-off between structural consistency and high-frequency details with respect to net size (see [observations](https://github.com/compphoto/BoostingMonocularDepth#observations)). Large maps will also need lots of VRAM.
+
+`Boost` will enable multi-resolution merging as implemented by [BoostingMonocularDepth](https://github.com/compphoto/BoostingMonocularDepth) and will significantly improve the results. Mitigating the observations mentioned above. Net size is ignored when enabled. Best results with res101.
 
 ### Normal estimations options
 
@@ -82,6 +90,8 @@ When `Combine into one image` is enabled, the normalmap will be combined with th
     - Yes, in img2img, set denoising strength to 0. This will effectively skip stable diffusion and use the input image. You will still have to set the correct size, and need to select `Crop and resize` instead of `Just resize` when the input image resolution does not match the set size perfectly.
  * `Can I run this on google colab ?`
     - You can run the MiDaS network on their colab linked here https://pytorch.org/hub/intelisl_midas_v2/ . 
+    - You can run BoostingMonocularDepth on their colab linked here : https://colab.research.google.com/github/compphoto/BoostingMonocularDepth/blob/main/Boostmonoculardepth.ipynb
+    - The transformation from depth map to normal map is fairly compact set of opencv/numpy functions.
 
 ## Acknowledgements
 
@@ -107,7 +117,7 @@ MiDaS :
 Dense Prediction Transformers, DPT-based model :
 
 ```
-@article{Ranftl2021,
+@ARTICLE{Ranftl2021,
 	author    = {Ren\'{e} Ranftl and Alexey Bochkovskiy and Vladlen Koltun},
 	title     = {Vision Transformers for Dense Prediction},
 	journal   = {ICCV},
