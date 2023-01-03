@@ -424,7 +424,7 @@ class Script(scripts.Script):
 				if not (invert_normal ^ model_type == 4):
 					img_output = cv2.bitwise_not(img_output)
 
-				img_output *= scale_depth
+				img_output = (scale_depth * img_output).astype("uint16")
 
 				# three channel, 8 bits per channel image
 				img_output2 = np.zeros_like(processed.images[count])
@@ -486,7 +486,10 @@ class Script(scripts.Script):
 				print(e)
 
 		finally:
-			del model
+			try:
+				del model
+			except:
+				pass
 			if boost:
 				del pix2pixmodel
 			gc.collect()
