@@ -46,7 +46,7 @@ sys.path.append(str(path_monorepo))
 whole_size_threshold = 1600  # R_max from the paper
 pix2pixsize = 1024
 
-scriptname = "NormalMap v0.1.3"
+scriptname = "NormalMap v0.1.4"
 
 class Script(scripts.Script):
 	def title(self):
@@ -59,13 +59,13 @@ class Script(scripts.Script):
 
 		with gr.Row():
 			compute_device = gr.Radio(label="Compute on", choices=['GPU','CPU'], value='GPU', type="index")
-			model_type = gr.Dropdown(label="Model", choices=['dpt_large','dpt_hybrid','midas_v21','midas_v21_small','res101'], value='dpt_large', type="index", elem_id="model_type")
+			model_type = gr.Dropdown(label="Model", choices=['res101', 'dpt_beit_large_512 (midas 3.1)', 'dpt_beit_large_384 (midas 3.1)', 'dpt_large_384 (midas 3.0)','dpt_hybrid_384 (midas 3.0)','midas_v21','midas_v21_small'], value='dpt_beit_large_512 (midas 3.1)', type="index", elem_id="tabmodel_type")
 		with gr.Row():
-			net_width = gr.Slider(minimum=64, maximum=2048, step=64, label='Net width', value=384)
-			net_height = gr.Slider(minimum=64, maximum=2048, step=64, label='Net height', value=384)
+			net_width = gr.Slider(minimum=64, maximum=2048, step=64, label='Net width', value=512)
+			net_height = gr.Slider(minimum=64, maximum=2048, step=64, label='Net height', value=512)
 		with gr.Row():	
 			match_size = gr.Checkbox(label="Match input size",value=True)
-			boost = gr.Checkbox(label="BOOST (multi-resolution merging)",value=True)
+			boost = gr.Checkbox(label="BOOST (multi-resolution merging)",value=False)
 			scale_depth = gr.Slider(minimum=0.1, maximum=3, step=0.1, label='pre-scale depth', value=1.0)
 
 		with gr.Row():
@@ -130,8 +130,53 @@ class Script(scripts.Script):
 		print("Loading depth model weights from ", end=" ")
 
 		try:
-			#"dpt_large"
+			#"res101"
 			if model_type == 0: 
+				model_path = f"{model_dir}/res101.pth"
+				print(model_path)
+				if not os.path.exists(model_path):
+					download_file(model_path,"https://cloudstor.aarnet.edu.au/plus/s/lTIJF4vrvHCAI31/download")
+				if compute_device == 0:
+					checkpoint = torch.load(model_path)
+				else:
+					checkpoint = torch.load(model_path,map_location=torch.device('cpu'))
+				model = RelDepthModel(backbone='resnext101')
+				model.load_state_dict(strip_prefix_if_present(checkpoint['depth_model'], "module."), strict=True)
+				del checkpoint
+				devices.torch_gc()
+
+        	#"dpt_beit_large_512" midas 3.1
+			if model_type == 1: 
+				model_path = f"{model_dir}/dpt_beit_large_512.pt"
+				print(model_path)
+				if not os.path.exists(model_path):
+					download_file(model_path,"https://github.com/isl-org/MiDaS/releases/download/v3_1/dpt_beit_large_512.pt")
+				model = DPTDepthModel(
+					path=model_path,
+					backbone="beitl16_512",
+					non_negative=True,
+				)
+				net_w, net_h = 512, 512
+				resize_mode = "minimal"
+				normalization = NormalizeImage(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+
+        	#"dpt_beit_large_384" midas 3.1
+			if model_type == 2: 
+				model_path = f"{model_dir}/dpt_beit_large_384.pt"
+				print(model_path)
+				if not os.path.exists(model_path):
+					download_file(model_path,"https://github.com/isl-org/MiDaS/releases/download/v3_1/dpt_beit_large_384.pt")
+				model = DPTDepthModel(
+					path=model_path,
+					backbone="beitl16_384",
+					non_negative=True,
+				)
+				net_w, net_h = 384, 384
+				resize_mode = "minimal"
+				normalization = NormalizeImage(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+
+			#"dpt_large_384" midas 3.0
+			if model_type == 3: 
 				model_path = f"{model_dir}/dpt_large-midas-2f21e586.pt"
 				print(model_path)
 				if not os.path.exists(model_path):
@@ -145,8 +190,8 @@ class Script(scripts.Script):
 				resize_mode = "minimal"
 				normalization = NormalizeImage(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
 
-			#"dpt_hybrid"
-			elif model_type == 1: 
+			#"dpt_hybrid_384" midas 3.0
+			elif model_type == 4: 
 				model_path = f"{model_dir}/dpt_hybrid-midas-501f0c75.pt"
 				print(model_path)
 				if not os.path.exists(model_path):
@@ -161,7 +206,7 @@ class Script(scripts.Script):
 				normalization = NormalizeImage(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
 
 			#"midas_v21"
-			elif model_type == 2: 
+			elif model_type == 5: 
 				model_path = f"{model_dir}/midas_v21-f6b98070.pt"
 				print(model_path)
 				if not os.path.exists(model_path):
@@ -174,7 +219,7 @@ class Script(scripts.Script):
 				)
 
 			#"midas_v21_small"
-			elif model_type == 3: 
+			elif model_type == 6: 
 				model_path = f"{model_dir}/midas_v21_small-70d6b9c8.pt"
 				print(model_path)
 				if not os.path.exists(model_path):
@@ -185,17 +230,6 @@ class Script(scripts.Script):
 				normalization = NormalizeImage(
 					mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
 				)
-			#"res101"
-			elif model_type == 4: 
-				model_path = f"{model_dir}/res101.pth"
-				print(model_path)
-				if not os.path.exists(model_path):
-					download_file(model_path,"https://cloudstor.aarnet.edu.au/plus/s/lTIJF4vrvHCAI31/download")
-				checkpoint = torch.load(model_path)
-				model = RelDepthModel(backbone='resnext101')
-				model.load_state_dict(strip_prefix_if_present(checkpoint['depth_model'], "module."), strict=True)
-				del checkpoint
-				torch.cuda.empty_cache()
 
 			# load merge network if boost enabled
 			if boost:
@@ -220,7 +254,7 @@ class Script(scripts.Script):
 			# optimize
 			if device == torch.device("cuda"):
 				model = model.to(memory_format=torch.channels_last)  
-				if not cmd_opts.no_half and model_type != 4 and not boost:
+				if not cmd_opts.no_half and model_type != 0 and not boost:
 					model = model.half()
 
 			model.to(device)
@@ -242,13 +276,13 @@ class Script(scripts.Script):
 				
 				# compute
 				if not boost:
-					if model_type == 4:
+					if model_type == 0:
 						prediction = estimateleres(img, model, net_width, net_height)
 					else:
 						prediction = estimatemidas(img, model, net_width, net_height, resize_mode, normalization)
 				
 				else:
-					if model_type == 4:
+					if model_type == 0:
 						net_receptive_field_size = 448
 						patch_netsize = 2 * net_receptive_field_size
 					else:
@@ -421,7 +455,7 @@ class Script(scripts.Script):
 				img_output = out.astype("uint16")
 
 				# invert normal map
-				if not (invert_normal ^ model_type == 4):
+				if not (invert_normal ^ model_type == 0):
 					img_output = cv2.bitwise_not(img_output)
 
 				img_output = (scale_depth * img_output).astype("uint16")
