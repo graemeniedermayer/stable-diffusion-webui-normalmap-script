@@ -23,7 +23,7 @@ import numpy as np
 import skimage.measure
 import argparse
 
-sys.path.append('extensions/stable-diffusion-webui-depthmap-script/scripts')
+sys.path.append('extensions/stable-diffusion-webui-normalmap-script/scripts')
 
 # midas imports
 from midas.dpt_depth import DPTDepthModel
