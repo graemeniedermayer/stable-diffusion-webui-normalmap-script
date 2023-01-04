@@ -23,15 +23,15 @@ import numpy as np
 import skimage.measure
 import argparse
 
-# AdelaiDepth imports
+# midas imports
+from midas.dpt_depth import DPTDepthModel
+from midas.midas_net import MidasNet
+from midas.midas_net_custom import MidasNet_small
+from midas.transforms import Resize, NormalizeImage, PrepareForNet
+
+# AdelaiDepth/LeReS imports
 from lib.multi_depth_model_woauxi import RelDepthModel
 from lib.net_tools import strip_prefix_if_present
-
-#midas imports
-from repositories.midas.midas.dpt_depth import DPTDepthModel
-from repositories.midas.midas.midas_net import MidasNet
-from repositories.midas.midas.midas_net_custom import MidasNet_small
-from repositories.midas.midas.transforms import Resize, NormalizeImage, PrepareForNet
 
 # pix2pix/merge net imports
 from pix2pix.options.test_options import TestOptions
