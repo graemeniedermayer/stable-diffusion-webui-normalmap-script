@@ -23,6 +23,8 @@ import numpy as np
 import skimage.measure
 import argparse
 
+sys.path.append('extensions/stable-diffusion-webui-depthmap-script/scripts')
+
 # midas imports
 from midas.dpt_depth import DPTDepthModel
 from midas.midas_net import MidasNet
@@ -39,9 +41,6 @@ from pix2pix.models.pix2pix4depth_model import Pix2Pix4DepthModel
 from pix2pix.util import util
 import pix2pix.models
 import pix2pix.data
-
-path_monorepo = Path.joinpath(Path().resolve(), "repositories/BoostingMonocularDepth")
-sys.path.append(str(path_monorepo))
 
 whole_size_threshold = 1600  # R_max from the paper
 pix2pixsize = 1024
