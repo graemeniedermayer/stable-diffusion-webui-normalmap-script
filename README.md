@@ -1,4 +1,7 @@
-﻿# High Resolution Normal Maps for Stable Diffusion WebUI
+**This script has been reintegrated into the main [depth repo](https://github.com/thygate/stable-diffusion-webui-depthmap-script). With the added advantage of being able to use Zoedepth.**
+ 
+ # High Resolution Normal Maps for Stable Diffusion WebUI
+ 
 This script is an addon for [AUTOMATIC1111's Stable Diffusion Web UI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) that creates `normalmaps` from the generated images. Normal maps are helpful for giving flat textures a sense of depth with lighting.
 
 To generate realistic normal maps from a single image, this script uses code and models from the [MiDaS](https://github.com/isl-org/MiDaS) repository by Intel ISL. See [https://pytorch.org/hub/intelisl_midas_v2/](https://pytorch.org/hub/intelisl_midas_v2/) for more info, or LeReS from the [AdelaiDepth](https://github.com/aim-uofa/AdelaiDepth) repository by Advanced Intelligent Machines. Multi-resolution merging as implemented by [BoostingMonocularDepth](https://github.com/compphoto/BoostingMonocularDepth) is used to generate high resolution depth maps.
