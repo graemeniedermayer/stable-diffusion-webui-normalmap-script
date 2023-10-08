@@ -6,7 +6,7 @@ import gradio as gr
 
 from modules import processing, images, shared, sd_samplers, devices
 from modules.processing import create_infotext, process_images, Processed
-from modules.shared import opts, cmd_opts, state, Options
+from modules.shared import opts, cmd_opts
 from PIL import Image
 from pathlib import Path
 from operator import getitem
