@@ -285,6 +285,7 @@ def regular_tile(model, image, offset_x=0, offset_y=0, img_lr=None, iter_pred=No
     # height = 540
     # width = 960
     IMG_RESOLUTION = (2160, 3840)
+    CROP_SIZE = (int(IMG_RESOLUTION[0] // 4), int(IMG_RESOLUTION[1] // 4))
     height = CROP_SIZE[0]
     width = CROP_SIZE[1]
 
