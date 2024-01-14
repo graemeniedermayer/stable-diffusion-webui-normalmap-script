@@ -86,6 +86,7 @@ def load_ckpt(model, checkpoint):
 
 #### def dataset
 def read_image(path, dataset_name):
+    IMG_RESOLUTION = (2160, 3840)
     if dataset_name == 'u4k':
         img = np.fromfile(open(path, 'rb'), dtype=np.uint8).reshape(2160, 3840, 3) / 255.0
         img = img.astype(np.float32)[:, :, ::-1].copy()
@@ -283,6 +284,7 @@ def regular_tile(model, image, offset_x=0, offset_y=0, img_lr=None, iter_pred=No
     # crop size
     # height = 540
     # width = 960
+    IMG_RESOLUTION = (2160, 3840)
     height = CROP_SIZE[0]
     width = CROP_SIZE[1]
 
@@ -322,6 +324,7 @@ def regular_tile(model, image, offset_x=0, offset_y=0, img_lr=None, iter_pred=No
     bboxs_roi = torch.stack(bboxs_roi, dim=0)
     bboxs_raw = torch.stack(bboxs_raw, dim=0)
 
+    TRANSFORM = Compose([Resize(512, 384, keep_aspect_ratio=False, ensure_multiple_of=32, resize_method="minimal")])       
     if iter_pred is not None:
         iter_priors = torch.cat(iter_priors, dim=0)
         iter_priors = TRANSFORM(iter_priors)
@@ -567,9 +570,11 @@ def regular_tile_param(model, image, offset_x=0, offset_y=0, img_lr=None, iter_p
         return avg_depth_map
 
 def random_tile(model, image, img_lr=None, iter_pred=None, boundary=0, update=False, avg_depth_map=None, blr_mask=False):
+    IMG_RESOLUTION = (2160, 3840)
+    CROP_SIZE = (int(IMG_RESOLUTION[0] // 4), int(IMG_RESOLUTION[1] // 4))
+
     height = CROP_SIZE[0]
     width = CROP_SIZE[1]
-    
     
     x_start = [random.randint(0, IMG_RESOLUTION[1] - width - 1)]
     y_start = [random.randint(0, IMG_RESOLUTION[0] - height - 1)]
@@ -604,6 +609,7 @@ def random_tile(model, image, img_lr=None, iter_pred=None, boundary=0, update=Fa
     bboxs_roi = torch.stack(bboxs_roi, dim=0)
     bboxs_raw = torch.stack(bboxs_raw, dim=0)
 
+    TRANSFORM = Compose([Resize(512, 384, keep_aspect_ratio=False, ensure_multiple_of=32, resize_method="minimal")])
     if iter_pred is not None:
         iter_priors = torch.cat(iter_priors, dim=0)
         iter_priors = TRANSFORM(iter_priors)
@@ -652,6 +658,7 @@ def random_tile(model, image, img_lr=None, iter_pred=None, boundary=0, update=Fa
     pred_depth = iter_pred
 
     blur_mask = generatemask((height, width)) + 1e-3
+    IMG_RESOLUTION = (2160, 3840)
     for ii, x in enumerate(x_start):
         for jj, y in enumerate(y_start):
             if init_flag:
@@ -917,6 +924,8 @@ def rescale(A, lbound=0, ubound=1):
 
 def run(model, dataset, gt_dir=None, show_path=None, show=False, save_flag=False, save_path=None, mode=None, dataset_name=None, base_zoed=False, blr_mask=False):
     data_len = len(dataset)
+    IMG_RESOLUTION = (2160, 3840)
+    CROP_SIZE = (int(IMG_RESOLUTION[0] // 4), int(IMG_RESOLUTION[1] // 4))
 
     if gt_dir is not None:
         metrics_avg = RunningAverageDict()
@@ -932,6 +941,7 @@ def run(model, dataset, gt_dir=None, show_path=None, show=False, save_flag=False
 
         # Load image from dataset
         img = torch.tensor(images).unsqueeze(dim=0).permute(0, 3, 1, 2) # shape: 1, 3, h, w
+        TRANSFORM = Compose([Resize(512, 384, keep_aspect_ratio=False, ensure_multiple_of=32, resize_method="minimal")])
         img_lr = TRANSFORM(img)
         
         
@@ -944,7 +954,7 @@ def run(model, dataset, gt_dir=None, show_path=None, show=False, save_flag=False
             # pred_depth, count_map = regular_tile(model, img, offset_x=0, offset_y=0, img_lr=img_lr)
             # avg_depth_map = RunningAverageMap(pred_depth, count_map)
             avg_depth_map = regular_tile(model, img, offset_x=0, offset_y=0, img_lr=img_lr)
-        
+            BOUNDARY = 0
             if mode== 'p16':
                 pass
             elif mode== 'p49':

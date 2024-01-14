@@ -208,13 +208,6 @@ class ModelHolder:
             model_path = f"{model_dir}/patchfusion_u4k.pt"
             zoe_model_path = f"{model_dir}/ZoeD_M12_N.pt"
             # prepare some global args
-            global IMG_RESOLUTION
-            IMG_RESOLUTION = (2160, 3840)
-
-            global TRANSFORM 
-            TRANSFORM = patchfusion.Compose([patchfusion.Resize(512, 384, keep_aspect_ratio=False, ensure_multiple_of=32, resize_method="minimal")])
-            global BOUNDARY 
-            BOUNDARY = 0
             ensure_file_downloaded(model_path,
                                    "https://huggingface.co/zhyever/PatchFusion/resolve/main/patchfusion_u4k.pt?download=true")
             # TODO: should this be same as other zoedepth?
@@ -459,10 +452,6 @@ def estimatemarigold(image, model, w, h, marigold_ensembles=5, marigold_steps=12
 def estimatepatchfusion(image, model, w, h):
     # resize first?
     with torch.no_grad():
-        global IMG_RESOLUTION
-        IMG_RESOLUTION = (int(w), int(h))
-        global CROP_SIZE 
-        CROP_SIZE = (int(IMG_RESOLUTION[0] // 4), int(IMG_RESOLUTION[1] // 4))
         # dataset_custom = patchfusion.ImageDataset(args.rgb_dir)
         avg_depth_map = patchfusion.run( model, np.array([image]), 
                         None, None, False, False, None) 
