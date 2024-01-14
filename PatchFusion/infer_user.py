@@ -68,8 +68,8 @@ def load_state_dict(model, state_dict):
 
         state[k] = v
 
-    model.load_state_dict(state, strict=True)
-    # model.load_state_dict(state, strict=False)
+    # model.load_state_dict(state, strict=True)
+    model.load_state_dict(state, strict=False)
     print("Loaded successfully")
     return model
 
@@ -931,7 +931,7 @@ def run(model, dataset, gt_dir=None, show_path=None, show=False, save_flag=False
                 images, depths = dataset[image_ind]
 
         # Load image from dataset
-        img = torch.tensor(images.rgb_image).unsqueeze(dim=0).permute(0, 3, 1, 2) # shape: 1, 3, h, w
+        img = torch.tensor(images).unsqueeze(dim=0).permute(0, 3, 1, 2) # shape: 1, 3, h, w
         img_lr = TRANSFORM(img)
         
         
