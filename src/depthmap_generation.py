@@ -210,18 +210,20 @@ class ModelHolder:
             print(model_path)
             ensure_file_downloaded(model_path,
                                    "https://huggingface.co/zhyever/PatchFusion/resolve/main/patchfusion_u4k.pt?download=true")
-            ensure_file_downloaded(model_path,
+            # TODO: should this be same as other zoedepth?
+            ensure_file_downloaded(zoe_model_path,
                                    "https://github.com/isl-org/ZoeDepth/releases/download/v1.0/ZoeD_M12_N.pt")
-            # config options ["zoedepth", "zoedepth_nk", "zoedepth_custom"]
             unknown_args = []
             overwrite_kwargs = patchfusion.parse_unknown(unknown_args)
-            overwrite_kwargs['model_cfg_path'] = zoe_model_path
+            overwrite_kwargs['model_cfg_path'] = "./PatchFusion/zoedepth/models/zoedepth_custom/configs/config_zoedepth_patchfusion.json"
             overwrite_kwargs["model"] = model_path
-            overwrite_kwargs["version_name"] = 'v1'
-            config = patchfusion.get_config_user("zoedepth", **overwrite_kwargs)
+            # config options ["zoedepth", "zoedepth_nk", "zoedepth_custom"]
+            # zoedepth_custom seems to be correct
+            overwrite_kwargs["version_name"] = 'custom'
+            config = patchfusion.get_config_user("zoedepth_custom", **overwrite_kwargs)
             config["pretrained_resource"] = ''
             model = patchfusion.build_model(config)
-            model = patchfusion.load_ckpt(model, model_path)
+            model = patchfusion.load_ckpt(model, zoe_model_path)
 
         if model_type in range(0, 11):
             model.eval()  # prepare for evaluation

@@ -41,6 +41,7 @@ ensure('transforms3d', '0.4.1')
 ensure('diffusers', '0.20.1')  # For Merigold
 
 ensure('imageio')  # 2.4.1
+ensure('json5')
 try:  # Dirty hack to not reinstall every time
     importlib_metadata.version('imageio-ffmpeg')
 except:

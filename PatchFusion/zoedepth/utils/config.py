@@ -569,7 +569,7 @@ def get_config_user(model_name, mode='infer', model_cfg_path=None, **overwrite_k
     
     config = flatten({**COMMON_CONFIG, **COMMON_TRAINING_CONFIG})
     config = update_model_config(config, mode, model_name, model_cfg_path=model_cfg_path)
-    config["version_name"] = 'v1'
+    config["version_name"] = 'custom'
     # update with model version specific config
     version_name = overwrite_kwargs.get("version_name", config["version_name"])
     config = update_model_config(config, mode, model_name, version_name, model_cfg_path=model_cfg_path)
