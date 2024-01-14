@@ -26,6 +26,8 @@ from marigold.marigold import MarigoldPipeline
 # pix2pix/merge net imports
 from pix2pix.options.test_options import TestOptions
 
+from PatchFusion import infer_user as patchfusion
+
 # Our code
 from src.misc import *
 from src import backbone
@@ -202,7 +204,26 @@ class ModelHolder:
             except:
                 pass  # run without xformers
 
-        if model_type in range(0, 10):
+        elif model_type == 11: #PatchFusion
+            model_path = f"{model_dir}/patchfusion_u4k.pt"
+            zoe_model_path = f"{model_dir}/ZoeD_M12_N.pt"
+            print(model_path)
+            ensure_file_downloaded(model_path,
+                                   "https://huggingface.co/zhyever/PatchFusion/resolve/main/patchfusion_u4k.pt?download=true")
+            ensure_file_downloaded(model_path,
+                                   "https://github.com/isl-org/ZoeDepth/releases/download/v1.0/ZoeD_M12_N.pt")
+            # config options ["zoedepth", "zoedepth_nk", "zoedepth_custom"]
+            unknown_args = []
+            overwrite_kwargs = patchfusion.parse_unknown(unknown_args)
+            overwrite_kwargs['model_cfg_path'] = zoe_model_path
+            overwrite_kwargs["model"] = model_path
+            overwrite_kwargs["version_name"] = 'v1'
+            config = patchfusion.get_config_user("zoedepth", **overwrite_kwargs)
+            config["pretrained_resource"] = ''
+            model = patchfusion.build_model(config)
+            model = patchfusion.load_ckpt(model, model_path)
+
+        if model_type in range(0, 11):
             model.eval()  # prepare for evaluation
         # optimize
         if device == torch.device("cuda"):
@@ -307,6 +328,9 @@ class ModelHolder:
             elif self.depth_model_type == 10:
                 raw_prediction = estimatemarigold(img, self.depth_model, net_width, net_height,
                                                   self.marigold_ensembles, self.marigold_steps)
+            elif self.depth_model_type == 11:
+                raw_prediction = estimatepatchfusion(img, self.depth_model, net_width, net_height)
+        
         else:
             raw_prediction = estimateboost(img, self.depth_model, self.depth_model_type, self.pix2pix_model,
                                            self.boost_rmax)
@@ -422,6 +446,14 @@ def estimatemarigold(image, model, w, h, marigold_ensembles=5, marigold_steps=12
                          match_input_res=False)
         return cv2.resize(pipe_out.depth_np, (image.shape[:2][::-1]), interpolation=cv2.INTER_CUBIC)
 
+# TODO: enforce no boost
+def estimatepatchfusion(image, model, w, h):
+    # resize first?
+    with torch.no_grad():
+        avg_depth_map = patchfusion.run( model, image, 
+                        None, None, False, False, None) 
+        prediction = Image.fromarray((avg_depth_map.average_map.squeeze().detach().cpu().numpy()*256).astype('uint16'))
+    return prediction
 
 class ImageandPatchs:
     def __init__(self, root_dir, name, patchsinfo, rgb_image, scale=1):
@@ -916,6 +948,8 @@ def singleestimate(img, msize, model, net_type):
         return estimateleres(img, model, msize, msize)
     elif net_type == 10:
         return estimatemarigold(img, model, msize, msize)
+    elif net_type == 11:
+        return estimatepatchfusion(img, model, msize, msize)
     elif net_type >= 7:
         # np to PIL
         return estimatezoedepth(Image.fromarray(np.uint8(img * 255)).convert('RGB'), model, msize, msize)
