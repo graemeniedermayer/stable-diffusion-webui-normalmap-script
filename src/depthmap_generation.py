@@ -455,9 +455,9 @@ def estimatepatchfusion(image, model, w, h):
     with torch.no_grad():
         # resizing
         img = F.interpolate(torch.tensor(image).unsqueeze(dim=0).permute(0, 3, 1, 2), (2160, 3840), mode='bicubic', align_corners=True)
-        img = img.squeeze().permute(1, 2, 0)
+        img = img.squeeze().permute(1, 2, 0).numpy()
         # dataset_custom = patchfusion.ImageDataset(args.rgb_dir)
-        avg_depth_map = patchfusion.run( model, img, 
+        avg_depth_map = patchfusion.run( model, np.array([img]), 
                         None, None, False, False, None, mode='r128') 
         prediction = Image.fromarray((avg_depth_map.average_map.squeeze().detach().cpu().numpy()*256).astype('uint16'))
     return prediction
