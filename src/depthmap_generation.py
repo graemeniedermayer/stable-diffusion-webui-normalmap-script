@@ -219,7 +219,7 @@ class ModelHolder:
             overwrite_kwargs["model"] = model_path
             # config options ["zoedepth", "zoedepth_nk", "zoedepth_custom"]
             # zoedepth_custom seems to be correct
-            overwrite_kwargs["version_name"] = 'patchfusion'
+            # overwrite_kwargs["version_name"] = 'patchfusion'
             config = patchfusion.get_config_user("zoedepth_custom", **overwrite_kwargs)
             config["pretrained_resource"] = ''
             model = patchfusion.build_model(config)
