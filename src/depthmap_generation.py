@@ -223,7 +223,7 @@ class ModelHolder:
             config = patchfusion.get_config_user("zoedepth_custom", **overwrite_kwargs)
             config["pretrained_resource"] = ''
             model = patchfusion.build_model(config)
-            model = patchfusion.load_ckpt(model, zoe_model_path)
+            model = patchfusion.load_ckpt(model, model_path)
 
         if model_type in range(0, 11):
             model.eval()  # prepare for evaluation
@@ -454,7 +454,7 @@ def estimatepatchfusion(image, model, w, h):
     with torch.no_grad():
         # dataset_custom = patchfusion.ImageDataset(args.rgb_dir)
         avg_depth_map = patchfusion.run( model, np.array([image]), 
-                        None, None, False, False, None) 
+                        None, None, False, False, None, mode='p16') 
         prediction = Image.fromarray((avg_depth_map.average_map.squeeze().detach().cpu().numpy()*256).astype('uint16'))
     return prediction
 

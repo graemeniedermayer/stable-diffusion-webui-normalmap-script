@@ -86,7 +86,7 @@ def load_ckpt(model, checkpoint):
 
 #### def dataset
 def read_image(path, dataset_name):
-    IMG_RESOLUTION = (1024, 1024)
+    IMG_RESOLUTION = (2160, 3840)
     if dataset_name == 'u4k':
         img = np.fromfile(open(path, 'rb'), dtype=np.uint8).reshape(2160, 3840, 3) / 255.0
         img = img.astype(np.float32)[:, :, ::-1].copy()
@@ -284,7 +284,7 @@ def regular_tile(model, image, offset_x=0, offset_y=0, img_lr=None, iter_pred=No
     # crop size
     # height = 540
     # width = 960
-    IMG_RESOLUTION = (1024, 1024)
+    IMG_RESOLUTION = (2160, 3840)
     CROP_SIZE = (int(IMG_RESOLUTION[0] // 4), int(IMG_RESOLUTION[1] // 4))
     height = CROP_SIZE[0]
     width = CROP_SIZE[1]
@@ -571,7 +571,7 @@ def regular_tile_param(model, image, offset_x=0, offset_y=0, img_lr=None, iter_p
         return avg_depth_map
 
 def random_tile(model, image, img_lr=None, iter_pred=None, boundary=0, update=False, avg_depth_map=None, blr_mask=False):
-    IMG_RESOLUTION = (1024, 1024)
+    IMG_RESOLUTION = (2160, 3840)
     CROP_SIZE = (int(IMG_RESOLUTION[0] // 4), int(IMG_RESOLUTION[1] // 4))
 
     height = CROP_SIZE[0]
@@ -659,7 +659,7 @@ def random_tile(model, image, img_lr=None, iter_pred=None, boundary=0, update=Fa
     pred_depth = iter_pred
 
     blur_mask = generatemask((height, width)) + 1e-3
-    IMG_RESOLUTION = (1024, 1024)
+    IMG_RESOLUTION = (2160, 3840)
     for ii, x in enumerate(x_start):
         for jj, y in enumerate(y_start):
             if init_flag:
@@ -925,7 +925,7 @@ def rescale(A, lbound=0, ubound=1):
 
 def run(model, dataset, gt_dir=None, show_path=None, show=False, save_flag=False, save_path=None, mode=None, dataset_name=None, base_zoed=False, blr_mask=False):
     data_len = len(dataset)
-    IMG_RESOLUTION = (1024, 1024)
+    IMG_RESOLUTION = (2160, 3840)
     CROP_SIZE = (int(IMG_RESOLUTION[0] // 4), int(IMG_RESOLUTION[1] // 4))
 
     if gt_dir is not None:
@@ -1028,13 +1028,13 @@ if __name__ == '__main__':
     # prepare some global args
     global IMG_RESOLUTION
     if args.dataset_name == 'u4k':
-        IMG_RESOLUTION = (1024, 1024)
+        IMG_RESOLUTION = (2160, 3840)
     elif args.dataset_name == 'gta':
         IMG_RESOLUTION = (1080, 1920)
     elif args.dataset_name == 'nyu':
         IMG_RESOLUTION = (480, 640)
     else:
-        IMG_RESOLUTION = (1024, 1024)
+        IMG_RESOLUTION = (2160, 3840)
     
     global TRANSFORM 
     TRANSFORM = Compose([Resize(512, 384, keep_aspect_ratio=False, ensure_multiple_of=32, resize_method="minimal")])
@@ -1076,4 +1076,6 @@ if __name__ == '__main__':
     if args.save:
         os.makedirs(args.save_path, exist_ok=True)
         
-    run(model, dataset_custom, args.gt_dir, args.show_path, args.show, args.save, args.save_path, mode=args.mode, dataset_name=args.dataset_name, base_zoed=args.base_zoed, blr_mask=args.blur_mask)
+    run(model, dataset_custom, args.gt_dir, args.show_path, 
+        args.show, args.save, args.save_path, mode=args.mode, 
+        dataset_name=args.dataset_name, base_zoed=args.base_zoed, blr_mask=args.blur_mask)

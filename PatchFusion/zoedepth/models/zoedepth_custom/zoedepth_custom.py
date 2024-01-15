@@ -248,7 +248,7 @@ class ZoeDepthCustom(DepthModel):
         #         pred_depth = self.implicit_function_train_process(sampled_depth, mode=mode)
         #         output = dict(metric_depth=pred_depth)
 
-        # elif mode == 'eval':
+        # if mode == 'eval' or mode =='infer':
         #     pred_depth = self.implicit_function_infer_process(mode=mode)
         #     output = dict(metric_depth=pred_depth)
         # else:
