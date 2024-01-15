@@ -445,6 +445,8 @@ class PatchFusion(DepthModel):
         feat_cat_list = []
         res_pool = [(24, 32), (48, 64), (96, 128), (192, 256), (384, 512)]
         for l_i, (f_ca, f_c_roi, f_f) in enumerate(zip(coarse_model_midas_enc_feats, coarse_model_midas_enc_roi_feats, fine_model_midas_enc_feats)):
+            raise Exception(f"{str(f_c_roi.shape)}")
+            raise Exception(f"{str(f_f.shape)}")
             feat_cat = self.fusion_conv_list[l_i](torch.cat([f_c_roi, f_f], dim=1))
             feat_plus = f_c_roi + f_f
             feat_cat_list.append(feat_cat)
