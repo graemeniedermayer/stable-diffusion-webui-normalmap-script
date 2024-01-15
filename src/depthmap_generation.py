@@ -25,6 +25,7 @@ from pix2pix.models.pix2pix4depth_model import Pix2Pix4DepthModel
 from marigold.marigold import MarigoldPipeline
 # pix2pix/merge net imports
 from pix2pix.options.test_options import TestOptions
+import torch.nn.functional as F
 
 from PatchFusion import infer_user as patchfusion
 
@@ -452,9 +453,12 @@ def estimatemarigold(image, model, w, h, marigold_ensembles=5, marigold_steps=12
 def estimatepatchfusion(image, model, w, h):
     # resize first?
     with torch.no_grad():
+        # resizing
+        img = F.interpolate(torch.tensor(image).unsqueeze(dim=0).permute(0, 3, 1, 2), (2160, 3840), mode='bicubic', align_corners=True)
+        img = img.squeeze().permute(1, 2, 0)
         # dataset_custom = patchfusion.ImageDataset(args.rgb_dir)
-        avg_depth_map = patchfusion.run( model, np.array([image]), 
-                        None, None, False, False, None, mode='p16') 
+        avg_depth_map = patchfusion.run( model, img, 
+                        None, None, False, False, None, mode='r128') 
         prediction = Image.fromarray((avg_depth_map.average_map.squeeze().detach().cpu().numpy()*256).astype('uint16'))
     return prediction
 
