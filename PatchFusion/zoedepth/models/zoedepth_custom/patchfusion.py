@@ -548,7 +548,7 @@ class PatchFusion(DepthModel):
 
     @staticmethod
     def build(midas_model_type="DPT_BEiT_L_384", pretrained_resource=None, use_pretrained_midas=False, train_midas=False, freeze_midas_bn=True, coarse_model_path=None, fine_model_path=None, **kwargs):
-        from zoedepth.models.zoedepth_custom.zoedepth_custom import ZoeDepthCustom
+        from PatchFusion.zoedepth.models.zoedepth_custom.zoedepth_custom import ZoeDepthCustom
         
         print("build pretrained condition model from {}".format(coarse_model_path))
         coarse_model = ZoeDepthCustom.build(
