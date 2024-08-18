@@ -34,12 +34,33 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
+try:
+    import face_recognition
+    from scipy.ndimage import gaussian_filter, convolve
+except Exception as e:
+    print('Face_recognition import failed. It will not work.')
+    import traceback
+    traceback.print_exc()
+
+
 global video_mesh_data, video_mesh_fn
 video_mesh_data = None
 video_mesh_fn = None
 
 model_holder = ModelHolder()
 
+def create_circular_mask(h, w, center=None, radius=None):
+
+    if center is None: # use the middle of the image
+        center = (int(w/2), int(h/2))
+    if radius is None: # use the smallest distance between the center and image walls
+        radius = min(center[0], center[1], w-center[0], h-center[1])
+
+    Y, X = np.ogrid[:h, :w]
+    dist_from_center = np.sqrt((X - center[0])**2 + (Y-center[1])**2)
+
+    mask = dist_from_center <= radius
+    return mask
 
 def convert_to_i16(arr):
     # Single channel, 16 bit image. This loses some precision!
@@ -185,6 +206,45 @@ def core_generation_funnel(outpath, inputimages, inputdepthmaps, inputnames, inp
                 raw_prediction, raw_prediction_invert = \
                     model_holder.get_raw_prediction(inputimages[count], net_width, net_height)
 
+                #TODO mainly for depthanything2
+                if inp[go.FACE_UPSAMPLE]:
+                    face_locations = face_recognition.face_locations(np.array(inputimages[count]))
+                    for face_loc in face_locations:
+                        #TODO extract this function
+                        padding = 5
+                        crop_loc = (face_loc[3]-padding, face_loc[0]-padding, face_loc[1]+padding, face_loc[2]+padding)
+                        # this seems strange to crop with different methods
+                        croppedimage = inputimages[count].crop(crop_loc)
+                        cropped_orig_depth = raw_prediction[crop_loc[1]:crop_loc[3],crop_loc[0]:crop_loc[2]]
+                        raw_cropped_prediction, raw_cropped_prediction_invert = model_holder.get_raw_prediction(croppedimage, net_width, net_height)
+                        #rescaling cropped prediction to original depth area
+                        crop_rescale_ratio = (np.max(cropped_orig_depth) - np.min(cropped_orig_depth)) / (np.max(raw_cropped_prediction) - np.min(raw_cropped_prediction))
+                        rescaled_crop_prediction = crop_rescale_ratio * (raw_cropped_prediction - np.min(raw_cropped_prediction)) + np.min(cropped_orig_depth)
+
+                        # blur edges (THIS SHOULD BE EXTRACTED)
+                        circle1 = create_circular_mask(rescaled_crop_prediction.shape[0],rescaled_crop_prediction.shape[1], radius=rescaled_crop_prediction.shape[0]/2-6)
+                        circle2 = create_circular_mask(rescaled_crop_prediction.shape[0],rescaled_crop_prediction.shape[1], radius=rescaled_crop_prediction.shape[0]/2-3)
+                        circle3 = create_circular_mask(rescaled_crop_prediction.shape[0],rescaled_crop_prediction.shape[1])
+                        cropped_orig_depth[circle2] = 0.5*rescaled_crop_prediction[circle2] + 0.5 * cropped_orig_depth[circle2]
+                        cropped_orig_depth[circle3] = 0.2*rescaled_crop_prediction[circle3] + 0.8 * cropped_orig_depth[circle3]
+                        # cropped_orig_depth[circle3] = gaussian_filter(cropped_orig_depth[circle3], sigma=9)
+                        cropped_orig_depth[circle3] = convolve(cropped_orig_depth, 1/16*np.array([[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1]]))[circle3]
+                        cropped_orig_depth[circle1] = rescaled_crop_prediction[circle1]
+                        raw_prediction[crop_loc[1]:crop_loc[3],crop_loc[0]:crop_loc[2]] = cropped_orig_depth
+                        # blur edges (THIS SHOULD BE EXTRACTED)
+
+                        # square blurring bad solution
+                        # edge1,edge2 = (int(crop_loc[1]-padding/2),int(crop_loc[1]+padding/2))
+                        # raw_prediction[ edge1:edge2, crop_loc[0]:crop_loc[2]] = gaussian_filter(raw_prediction[edge1:edge2,crop_loc[0]:crop_loc[2]], sigma=5)
+                        
+                        # edge1,edge2 = (int(crop_loc[3]-padding/2),int(crop_loc[3]+padding/2))
+                        # raw_prediction[edge1:edge2, crop_loc[0]:crop_loc[2]] = gaussian_filter(raw_prediction[edge1:edge2,crop_loc[0]:crop_loc[2]], sigma=5)
+                        
+                        # edge1,edge2 = (int(crop_loc[0]-padding/2),int(crop_loc[0]+padding/2))
+                        # raw_prediction[crop_loc[1]:crop_loc[3],edge1:edge2] = gaussian_filter(raw_prediction[crop_loc[1]:crop_loc[3],edge1:edge2], sigma=5)
+                        
+                        # edge1,edge2 = (int(crop_loc[2]-padding/2),int(crop_loc[2]+padding/2))
+                        # raw_prediction[crop_loc[1]:crop_loc[3],edge1:edge2] = gaussian_filter(raw_prediction[crop_loc[1]:crop_loc[3],edge1:edge2], sigma=5)
                 # output
                 if abs(raw_prediction.max() - raw_prediction.min()) > np.finfo("float").eps:
                     out = np.copy(raw_prediction)
@@ -204,7 +264,7 @@ def core_generation_funnel(outpath, inputimages, inputdepthmaps, inputnames, inp
                 else:
                     # Regretfully, the depthmap is broken and will be replaced with a black image
                     out = np.zeros(raw_prediction.shape)
-
+                
             # Maybe we should not use img_output for everything, since we get better accuracy from
             # the raw_prediction. However, it is not always supported. We maybe would like to achieve
             # reproducibility, so depthmap of the image should be the same as generating the depthmap one more time.

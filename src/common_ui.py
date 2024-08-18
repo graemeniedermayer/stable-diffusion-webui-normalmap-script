@@ -162,6 +162,11 @@ def main_ui_panel(is_depth_tab):
                     inp += go.REMBG_MODEL, gr.Dropdown(
                         label="Rembg Model", type="value",
                         choices=['u2net', 'u2netp', 'u2net_human_seg', 'silueta', "isnet-general-use", "isnet-anime"])
+        with gr.Box():
+            # TODO: it should be clear from the UI that there is an option of the background removal
+            #  that does not use the model selected above
+            with gr.Row():
+                inp += go.FACE_UPSAMPLE, gr.Checkbox(label="Depth Face Upsample")
 
         with gr.Box():
             gr.HTML(f"{SCRIPT_FULL_NAME}<br/>")

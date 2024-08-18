@@ -43,6 +43,8 @@ if not launch.is_installed("moviepy"):
 ensure('transforms3d', '0.4.1')
 
 ensure('diffusers', '0.20.1')  # For Merigold
+ensure('face_recognition')
+ensure('scipy')
 
 ensure('imageio')  # 2.4.1
 try:  # Dirty hack to not reinstall every time

@@ -64,3 +64,5 @@ class GenerationOptions(enum.Enum):
     SAVE_BACKGROUND_REMOVAL_MASKS = False  # Legacy, will be reworked
     PRE_DEPTH_BACKGROUND_REMOVAL = False  # Legacy, will be reworked
     REMBG_MODEL = "u2net"
+
+    FACE_UPSAMPLE = False
