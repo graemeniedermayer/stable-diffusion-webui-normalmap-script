@@ -23,10 +23,10 @@ def ensure_gradio_temp_directory():
 
 ensure_gradio_temp_directory()
 
+is_gradio4 =  int(gr.__version__[0])>3
 
 def main_ui_panel(is_depth_tab):
 
-    is_gradio4 = int(gr.__version__[0])>3
     if is_gradio4:
         Box = gr.Group
     else:
@@ -179,7 +179,7 @@ def main_ui_panel(is_depth_tab):
         def update_default_net_size(model_type):
             w, h = ModelHolder.get_default_net_size(model_type)
             if is_gradio4:
-                return gr.Slider(step=w), gr.Slider(step=h)
+                return gr.Slider(value=w), gr.Slider(value=h)
             else:
                 return inp[go.NET_WIDTH].update(value=w), inp[go.NET_HEIGHT].update(value=h)
             
@@ -314,7 +314,7 @@ def on_ui_tabs():
                         inp += gr.Checkbox(elem_id="custom_depthmap", label="Use custom DepthMap", value=False)
                     with gr.TabItem('Batch Process') as depthmap_mode_1:
                         inp += gr.File(elem_id='image_batch', label="Batch Process", file_count="multiple",
-                                       interactive=True, type="binary")
+                                       interactive=True, type="filepath")
                     with gr.TabItem('Batch from Directory') as depthmap_mode_2:
                         inp += gr.Textbox(elem_id="depthmap_batch_input_dir", label="Input directory",
                                           **backbone.get_hide_dirs(),
@@ -393,7 +393,6 @@ def on_ui_tabs():
         depthmap_mode_2.select(lambda: '2', None, inp['depthmap_mode'])
         depthmap_mode_3.select(lambda: '3', None, inp['depthmap_mode'])
 
-        is_gradio4 = int(gr.__version__[0])>3
         def custom_depthmap_change_fn(mode, zero_on, three_on):
             hide = mode == '0' and zero_on or mode == '3' and three_on
             if is_gradio4:
@@ -532,9 +531,14 @@ def run_generate(*inputs):
         if image_batch is None:
             return [], None, None, "Please select input images", ""
         for img in image_batch:
-            image = Image.open(os.path.abspath(img.name))
-            inputimages.append(image)
-            inputnames.append(os.path.splitext(img.orig_name)[0])
+            if not is_gradio4:
+                image = Image.open(os.path.abspath(img.name))
+                inputimages.append(image)
+                inputnames.append(os.path.splitext(img.orig_name)[0])
+            else:
+                image = Image.open(os.path.abspath(img))
+                inputimages.append(image)
+                inputnames.append(os.path.splitext(img)[0])
         print(f'{len(inputimages)} images will be processed')
     elif depthmap_mode == '2':  # Batch from Directory
         # TODO: There is a RAM leak when we process batches, I can smell it! Or maybe it is gone.
