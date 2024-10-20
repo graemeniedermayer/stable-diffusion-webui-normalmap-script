@@ -27,7 +27,8 @@ def ensure(module_name, min_version=None):
     launch.run_pip(cmd, msg)
 
 
-ensure('timm', '0.9.2')  # For midas, specified just in case
+# ensure('timm', '0.9.2')  # For midas, specified just in case
+ensure('timm', '0.4.12') 
 
 ensure('matplotlib')
 

@@ -7,7 +7,13 @@ import numpy as np
 import skimage.measure
 from PIL import Image
 import torch
-from torchvision.transforms import Compose, transforms
+from torchvision.transforms import (
+    Compose, transforms,
+    ConvertImageDtype,
+    Lambda,
+    Normalize,
+    ToTensor
+)
 
 # midas imports
 from dmidas.dpt_depth import DPTDepthModel
@@ -30,6 +36,9 @@ try:
     from ddepth_anything_v2 import DepthAnythingV2
 except:
     print('depth_anything_v2 import failed... somehow')
+from ddepth_pro import depth_pro
+from ddepth_pro import utils as depth_pro_utils
+
 
 # Our code
 from src.misc import *
@@ -87,7 +96,8 @@ class ModelHolder:
             model_dir = "./models/depth_anything"
         if model_type in [12, 13, 14]:
             model_dir = "./models/depth_anything_v2"
-
+        if model_type == 15:
+            model_dir = "./models/depthpro"
         # create paths to model if not present
         os.makedirs(model_dir, exist_ok=True)
         os.makedirs('./models/pix2pix', exist_ok=True)
@@ -246,7 +256,15 @@ class ModelHolder:
                              'vitg': {'encoder': 'vitg', 'features': 384, 'out_channels': [1536, 1536, 1536, 1536]}}
             model = DepthAnythingV2(**model_configs[f'vit{letter}'])
             model.load_state_dict(torch.load(model_path, map_location='cpu'))
-        # 15 is reserved for Depth Anything V2 Giant
+        # 15 will need to be moved to Depth Anything V2 Giant if it's every released
+        elif model_type == 15:
+            model_path = f"{model_dir}/depth_pro.pt"
+            ensure_file_downloaded(model_path,
+                "https://ml-site.cdn-apple.com/models/depth-pro/depth_pro.pt"
+            )
+            model = depth_pro.create_model(model_path)
+            model.eval()
+
 
         if tiling_mode:
             def flatten(el):
@@ -335,7 +353,8 @@ class ModelHolder:
             11: [518, 518],
             12: [518, 518],
             13: [518, 518],
-            14: [518, 518]
+            14: [518, 518],
+            15: [518, 518]
         }
         if model_type in sizes:
             return sizes[model_type]
@@ -396,10 +415,12 @@ class ModelHolder:
                 raw_prediction = estimatedepthanything(img, self.depth_model, net_width, net_height)
             elif self.depth_model_type in [12, 13, 14]:
                 raw_prediction = estimatedepthanything_v2(img, self.depth_model, net_width, net_height)
+            elif self.depth_model_type == 15:
+                raw_prediction = estimatedepthpro(img, self.depth_model, net_width, net_height)
         else:
             raw_prediction = estimateboost(img, self.depth_model, self.depth_model_type, self.pix2pix_model,
                                            self.boost_rmax)
-        raw_prediction_invert = self.depth_model_type in [0, 7, 8, 9, 10]
+        raw_prediction_invert = self.depth_model_type in [0, 7, 8, 9, 10, 15]
         return raw_prediction, raw_prediction_invert
 
 
@@ -558,6 +579,29 @@ def estimatedepthanything_v2(image, model, w, h):
         depth = F.interpolate(depth[:, None], (h, w), mode="bilinear", align_corners=True)[0, 0]
         return depth.cpu().numpy()
 
+def estimatedepthpro(image_array, model, w, h):
+    # Load and preprocess an image.
+    image_array_cv2 = cv2.cvtColor((image_array * 255.1).astype('uint8'), cv2.COLOR_BGR2RGB)
+    image, _, f_px = depth_pro_utils.load_rgb(Image.fromarray(image_array_cv2))
+
+    global depthmap_device
+    transform = Compose(
+        [
+            ToTensor(),
+            Lambda(lambda x: x.to(depthmap_device)),
+            Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
+            # add in halfs?
+            ConvertImageDtype(torch.float32),
+        ]
+    )
+
+    image = transform(image)
+
+    # Run inference.
+    prediction = model.infer(image, f_px=f_px)
+    depth = prediction["depth"]  # Depth in [m].
+    # focallength_px = prediction["focallength_px"]
+    return depth.cpu().numpy()
 
 class ImageandPatchs:
     def __init__(self, root_dir, name, patchsinfo, rgb_image, scale=1):
@@ -1059,6 +1103,8 @@ def singleestimate(img, msize, model, net_type):
         return estimatedepthanything(img, model, msize, msize)
     elif net_type in [12, 13, 14]:
         return estimatedepthanything_v2(img, model, msize, msize)
+    elif net_type == 15:
+        return estimatedepthpro(img, model, msize, msize)
     elif net_type >= 7:
         # np to PIL
         return estimatezoedepth(Image.fromarray(np.uint8(img * 255)).convert('RGB'), model, msize, msize)

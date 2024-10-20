@@ -236,3 +236,16 @@ Depth Anything V2
   year={2024}
 }
 ```
+
+Depth Pro
+
+```bibtex
+@article{Bochkovskii2024:arxiv,
+  author     = {Aleksei Bochkovskii and Ama\"{e}l Delaunoy and Hugo Germain and Marcel Santos and
+               Yichao Zhou and Stephan R. Richter and Vladlen Koltun}
+  title      = {Depth Pro: Sharp Monocular Metric Depth in Less Than a Second},
+  journal    = {arXiv},
+  year       = {2024},
+  url        = {https://arxiv.org/abs/2410.02073},
+}
+```
